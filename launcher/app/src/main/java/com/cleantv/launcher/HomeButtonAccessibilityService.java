@@ -247,16 +247,29 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
                 || keyCode == 264; // KEYCODE_PAIRING
     }
 
+    public static boolean isInputKey(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_TV_INPUT // 178
+                || keyCode == 171 // KEYCODE_WINDOW (Input button on Android TV)
+                || keyCode == 165 // KEYCODE_INFO
+                || (keyCode >= 243 && keyCode <= 255); // KEYCODE_TV_INPUT_HDMI_1 .. KEYCODE_TV_INPUT_VGA_1
+    }
+
     public static boolean isSettingsKey(int keyCode) {
-        if (isAppShortcutKey(keyCode) || isAccountKey(keyCode)) {
+        if (isAppShortcutKey(keyCode) || isAccountKey(keyCode) || isInputKey(keyCode)) {
             return false;
         }
         return keyCode == KeyEvent.KEYCODE_SETTINGS // 176
+                || keyCode == 357 // Virtual remote SETTINGS key on Android TV / Hisense
                 || keyCode == KeyEvent.KEYCODE_MENU // 82
                 || keyCode == 256 // KEYCODE_TV_CONTENTS_MENU
                 || keyCode == 257 // KEYCODE_TV_MEDIA_CONTEXT_MENU
                 || keyCode == KeyEvent.KEYCODE_HELP // 259
                 || keyCode == 284 // KEYCODE_ALL_APPS / Quick Settings
+                || keyCode == 285 // KEYCODE_MEDIA_TOP_MENU
+                || keyCode == 286
+                || keyCode == 287
+                || keyCode == 289
+                || keyCode == 290
                 || keyCode == 662 // Hisense settings receiver key
                 || keyCode == 663 // Hisense settings receiver key
                 || keyCode == 664 // Hisense settings receiver key
@@ -264,9 +277,8 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
                 || keyCode == 700 // Hisense SmartSense settings key
                 || keyCode == 709 // Hisense SmartSense tools key
                 || keyCode == 710 // Hisense SmartSense menu key
-                || keyCode == 171 // KEYCODE_WINDOW
-                || keyCode == 165 // KEYCODE_INFO
-                || keyCode == 178; // KEYCODE_TV_INPUT
+                || keyCode == 711
+                || keyCode == 712;
     }
 
     @Override
@@ -601,14 +613,20 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
                             }
                             return;
                         }
+                        if (isInputKey(kc)) {
+                            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                                launchInputsMenu();
+                            }
+                            return;
+                        }
                         if (isAccountKey(kc)) {
-                            if (event.getAction() == KeyEvent.ACTION_DOWN || event.getAction() == KeyEvent.ACTION_UP) {
+                            if (event.getAction() == KeyEvent.ACTION_DOWN) {
                                 launchUserMenu();
                             }
                             return;
                         }
                         if (isSettingsKey(kc)) {
-                            if (event.getAction() == KeyEvent.ACTION_DOWN || event.getAction() == KeyEvent.ACTION_UP) {
+                            if (event.getAction() == KeyEvent.ACTION_DOWN) {
                                 launchSettings();
                             }
                             return;
@@ -622,6 +640,8 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
                         int kc = intent.getIntExtra("keycode", 0);
                         if (isAppShortcutKey(kc)) {
                             handleAppShortcutKeyIfMatched(HomeButtonAccessibilityService.this, kc);
+                        } else if (isInputKey(kc)) {
+                            launchInputsMenu();
                         } else if (isAccountKey(kc)) {
                             launchUserMenu();
                         } else if (isSettingsKey(kc)) {
@@ -1186,8 +1206,16 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
             return true;
         }
 
+        if (isInputKey(keyCode)) {
+            if (action == KeyEvent.ACTION_DOWN) {
+                Log.i(TAG, "Input key (" + keyCode + ") captured! Launching inputs menu...");
+                launchInputsMenu();
+            }
+            return true;
+        }
+
         if (isAccountKey(keyCode)) {
-            if (action == KeyEvent.ACTION_UP) {
+            if (action == KeyEvent.ACTION_DOWN) {
                 Log.i(TAG, "Account key (" + keyCode + ") captured! Launching user menu...");
                 launchUserMenu();
             }
@@ -1210,13 +1238,30 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
                 } catch (Throwable ignored) {
                 }
             }
-            if (action == KeyEvent.ACTION_UP) {
+            if (action == KeyEvent.ACTION_DOWN) {
                 Log.i(TAG, "Settings key (" + keyCode + ") captured! Launching system settings...");
                 launchSettings();
             }
             return true;
         }
         return super.onKeyEvent(event);
+    }
+
+    public void launchInputsMenu() {
+        if (MainActivity.isMainActivityFocused()) {
+            MainActivity.requestShowInputsMenuFromService();
+            return;
+        }
+        try {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setAction(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_HOME);
+            intent.putExtra("EXTRA_OPEN_INPUTS_MENU", true);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+        } catch (Throwable t) {
+            Log.w(TAG, "launchInputsMenu failed: " + t.getMessage());
+        }
     }
 
     public void launchUserMenu() {

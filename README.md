@@ -27,11 +27,17 @@
   - Instant profile switching with distinct watchlists and preferences per household member.
 - **Physical Remote Mapping**:
   - **Account / Profile Key**: Opens the User Menu dialog.
-  - **Settings Gear Key** (`KEYCODE_SETTINGS` 176 / Quick Settings): Directly launches the original TV system settings (`com.android.tv.settings/.MainSettings`).
+  - **TV Input Key** (`KEYCODE_TV_INPUT` 178 / 171): Opens the TV Inputs dialog (HDMI 1, HDMI 2, Composite, etc.).
+  - **Settings Gear Key** (`KEYCODE_SETTINGS` 176 / Quick Settings / Hisense 357): Directly launches the original TV system settings (`com.android.tv.settings/.MainSettings`).
   - **Dedicated App Keys**: Direct fast-path routing for Netflix, Prime Video, YouTube, Disney+, Peacock, and Spotify.
 - **Live Local Weather & Time**: Auto-updating location-based weather pill, dynamic greeting, Wi-Fi status, and Bluetooth accessory management.
 - **Multi-Device Local Sync**: Automatic UDP peer discovery and state synchronization between TVs on the same local network (`ProfileSyncManager`).
-- **Dynamic Wave Wallpaper**: Procedural OpenGL / Canvas undulating ambient waves with multiple colorways (Cosmic Violet, Midnight Cyan, Cyberpunk Neon, Aurora, Solar Flare, Emerald, and Deep Obsidian).
+- **Dynamic Themes & 4K Wallpaper Slideshows**:
+  - **Dynamic Abstract**: Procedural OpenGL / Canvas undulating ambient wave mesh with multiple colorways (Cosmic Violet, Midnight Cyan, Cyberpunk Neon, Aurora, Solar Flare, Emerald, and Deep Obsidian).
+  - **Nature (4K)**: 18 high-resolution curated landscapes (Yosemite, Banff Moraine Lake, Matterhorn, Lofoten Aurora, Grand Canyon, Dolomites, etc.).
+  - **Space (4K)**: 17 high-resolution NASA / Webb / Hubble astrophotography images (Carina Nebula, Pillars of Creation, Jupiter Great Red Spot, Saturn Rings, Andromeda, etc.).
+  - **Cities (4K)**: 16 high-resolution global skylines (Tokyo, Manhattan, Singapore, Dubai, Paris, London, Chicago, etc.).
+  - **Smooth Slideshow Transitions**: Configurable rotation interval (1 min, 5 min default, 15 min, 30 min, 1 hour, or fixed) with silky 2.2-second crossfade transitions, subtle Ken Burns pan/zoom drift, and protective readability gradient overlays.
 
 ---
 
@@ -41,7 +47,8 @@
 | :--- | :--- | :--- |
 | **Home** | `KEYCODE_HOME` (3) | Instantly brings Nexus TV Launcher to the front with zero-flicker masking. |
 | **Account / Profile** | `KEYCODE_PROFILE_SWITCH` (288) | Opens the custom **User Profiles** dialog with avatar previews and active indicator. |
-| **Settings (Gear Icon)** | `KEYCODE_SETTINGS` (176) / `KEYCODE_MENU` (82) | Opens native Android TV / Fire TV system settings directly. |
+| **TV Input** | `KEYCODE_TV_INPUT` (178) / `KEYCODE_WINDOW` (171) | Opens the custom **TV Inputs** dialog (HDMI 1, HDMI 2, TV tuner, etc.). |
+| **Settings (Gear Icon)** | `KEYCODE_SETTINGS` (176) / `357` / Quick Settings | Opens native Android TV / Fire TV system settings directly. |
 | **Back** | `KEYCODE_BACK` (4) | Dismisses dialogs or exits dock reordering mode. |
 | **Menu** | `KEYCODE_MENU` (82) | Opens app options (Pin to Dock, App Info, Uninstall) for the focused tile. |
 
@@ -150,3 +157,4 @@ adb -s <TV_IP_ADDRESS>:5555 shell cmd package set-home-activity com.cleantv.laun
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
+

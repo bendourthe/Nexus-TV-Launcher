@@ -2,21 +2,64 @@ package com.cleantv.launcher;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Shader;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class AnimatedWaveBackgroundView extends View {
+
+    private static final String TAG = "AnimatedBg";
+
+    public enum ThemeCategory {
+        DYNAMIC_ABSTRACT("Dynamic Abstract", "Hypnotic fluid mesh waves with vibrant color shifts"),
+        NATURE("Nature Landscapes", "Slideshow of breathtaking 4K mountain, lake, and forest vistas"),
+        SPACE("Deep Space & Cosmos", "Slideshow of breathtaking 4K nebulae, galaxies, and planetary astrophotography"),
+        CITIES("World City Skylines", "Slideshow of breathtaking 4K twilight and night cityscapes");
+
+        public final String title;
+        public final String description;
+
+        ThemeCategory(String title, String description) {
+            this.title = title;
+            this.description = description;
+        }
+    }
+
+    public static final long[] ROTATION_INTERVALS = new long[]{
+            60_000L,        // 1 Minute
+            300_000L,       // 5 Minutes (Default)
+            900_000L,       // 15 Minutes
+            1_800_000L,     // 30 Minutes
+            3_600_000L,     // 1 Hour
+            0L              // Static / Off
+    };
+
+    public static final String[] INTERVAL_LABELS = new String[]{
+            "1 Minute", "5 Minutes (Default)", "15 Minutes", "30 Minutes", "1 Hour", "Off (Static)"
+    };
 
     public enum AbstractShape {
         SILK_RIBBONS("Liquid Silk Wave"),
@@ -36,8 +79,8 @@ public class AnimatedWaveBackgroundView extends View {
     public static class ThemeScheme {
         public final String name;
         public final AbstractShape shape;
-        public final float hueShift;       // Hue rotation in degrees
-        public final float satMultiplier;  // Saturation multiplier
+        public final float hueShift;
+        public final float satMultiplier;
         public final int accentColor;
         public final int secondaryColor;
         public final float waveAmplitude;
@@ -54,32 +97,21 @@ public class AnimatedWaveBackgroundView extends View {
     }
 
     public static final ThemeScheme[] THEMES = new ThemeScheme[]{
-            // 0. Liquid Silk Waves (Obsidian & Violet) - Smooth horizontal liquid glass flow
             new ThemeScheme("Liquid Silk (Obsidian Violet)", AbstractShape.SILK_RIBBONS,
                     0f, 1.0f, Color.parseColor("#B388FF"), Color.parseColor("#7C4DFF"), 1.0f),
-
-            // 1. Cascading Liquid Stream (Emerald Green) - Vertical cascading fluid streams
             new ThemeScheme("Cascading Stream (Emerald Green)", AbstractShape.AURORA_CURTAINS,
                     210f, 1.30f, Color.parseColor("#00F5A0"), Color.parseColor("#00D9F9"), 1.0f),
-
-            // 2. Deep Liquid Surge (Crimson Ember) - Broad smooth surging liquid waves, zero twirling
             new ThemeScheme("Liquid Surge (Crimson Ember)", AbstractShape.COSMIC_VORTEX,
                     60f, 1.35f, Color.parseColor("#FF2A55"), Color.parseColor("#FF7A00"), 1.0f),
-
-            // 3. Oceanic Liquid Drift (Deep Sapphire Blue) - Smooth diagonal laminar liquid glass flow
             new ThemeScheme("Oceanic Drift (Sapphire Blue)", AbstractShape.GEOMETRIC_PRISMS,
                     310f, 1.35f, Color.parseColor("#00A6FF"), Color.parseColor("#0051FF"), 1.05f),
-
-            // 4. Warm Fluid Contours (Solar Amber) - Broad rolling sinusoidal liquid dunes
             new ThemeScheme("Fluid Contours (Solar Amber)", AbstractShape.TOPOGRAPHIC_DUNES,
                     110f, 1.30f, Color.parseColor("#FFB703"), Color.parseColor("#FB8500"), 1.0f),
-
-            // 5. Concentric Fluid Ripples (Electric Magenta) - Smooth concentric circular water ripples
             new ThemeScheme("Fluid Ripples (Electric Magenta)", AbstractShape.CYBER_SYNTH_GRID,
                     340f, 1.35f, Color.parseColor("#FF007F"), Color.parseColor("#9D4EDD"), 1.0f)
     };
 
-    // 24x16 mesh grid for real-time hardware-accelerated deformation
+    // Mesh deformation for Abstract Theme
     private static final int MESH_WIDTH = 24;
     private static final int MESH_HEIGHT = 16;
     private static final int VERTEX_COUNT = (MESH_WIDTH + 1) * (MESH_HEIGHT + 1);
@@ -95,7 +127,7 @@ public class AnimatedWaveBackgroundView extends View {
     private ValueAnimator transitionAnimator;
     private float phase = 0f;
 
-    // Theme state
+    // Abstract theme state
     private int currentThemeIndex = 0;
     private int targetThemeIndex = 0;
     private float curHue = THEMES[0].hueShift;
@@ -111,17 +143,41 @@ public class AnimatedWaveBackgroundView extends View {
     private float prevAmp = curAmp;
     private float themeTransitionProgress = 1f;
 
-    // Auto rotate every 5 minutes (300,000 ms)
-    public static final long AUTO_ROTATE_DELAY_MS = 300000;
+    // Mode & Category
+    private ThemeCategory currentCategory = ThemeCategory.DYNAMIC_ABSTRACT;
+
+    // Wallpaper Photo Collections
+    private final List<String> natureWallpapers = new ArrayList<>();
+    private final List<String> spaceWallpapers = new ArrayList<>();
+    private final List<String> citiesWallpapers = new ArrayList<>();
+    private int currentPhotoIndex = 0;
+
+    private Bitmap currentPhotoBitmap = null;
+    private Bitmap prevPhotoBitmap = null;
+    private float photoCrossfadeProgress = 1.0f;
+    private ValueAnimator photoCrossfadeAnim;
+
+    private final Paint photoPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final Paint prevPhotoPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final Paint overlayPaint = new Paint();
+    private Paint bottomGradientPaint;
+    private Paint topGradientPaint;
+
+    // Slideshow Timing
+    public static final long DEFAULT_ROTATION_INTERVAL_MS = 300000L; // 5 minutes
+    private long rotationIntervalMs = DEFAULT_ROTATION_INTERVAL_MS;
     private boolean autoRotateEnabled = true;
-    private final Handler autoRotateHandler = new Handler(Looper.getMainLooper());
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final ExecutorService decodeExecutor = Executors.newSingleThreadExecutor();
+
     private final Runnable autoRotateRunnable = new Runnable() {
         @Override
         public void run() {
-            if (autoRotateEnabled) {
+            if (autoRotateEnabled && rotationIntervalMs > 0) {
                 cycleToNextTheme();
+                mainHandler.postDelayed(this, rotationIntervalMs);
             }
-            autoRotateHandler.postDelayed(this, AUTO_ROTATE_DELAY_MS);
         }
     };
 
@@ -146,26 +202,214 @@ public class AnimatedWaveBackgroundView extends View {
         } catch (Throwable ignored) {
         }
 
-        // Seamless 2*PI phase cycle over 20 seconds for ultra-smooth, hypnotic liquid motion
+        discoverPhotoWallpapers();
+
         continuousAnimator = ValueAnimator.ofFloat(0f, (float) (Math.PI * 2.0));
-        continuousAnimator.setDuration(20000);
+        continuousAnimator.setDuration(24000);
         continuousAnimator.setRepeatCount(ValueAnimator.INFINITE);
         continuousAnimator.setRepeatMode(ValueAnimator.RESTART);
         continuousAnimator.setInterpolator(new LinearInterpolator());
         continuousAnimator.addUpdateListener(anim -> {
             phase = (float) anim.getAnimatedValue();
-            updateMesh();
+            if (currentCategory == ThemeCategory.DYNAMIC_ABSTRACT) {
+                updateMesh();
+            }
             invalidate();
         });
         continuousAnimator.start();
+
+        scheduleNextRotation();
     }
 
-    public void setAmbientGlow(int color, float focusX, float focusY) {
-        // Spotlight dots completely disabled
+    public void discoverPhotoWallpapers() {
+        AssetManager am = getContext().getAssets();
+        natureWallpapers.clear();
+        spaceWallpapers.clear();
+        citiesWallpapers.clear();
+
+        scanAssetCategory(am, "wallpapers/nature", natureWallpapers);
+        scanAssetCategory(am, "wallpapers/space", spaceWallpapers);
+        scanAssetCategory(am, "wallpapers/cities", citiesWallpapers);
+
+        Log.i(TAG, "Wallpapers discovered - Nature: " + natureWallpapers.size()
+                + ", Space: " + spaceWallpapers.size() + ", Cities: " + citiesWallpapers.size());
+    }
+
+    private void scanAssetCategory(AssetManager am, String folder, List<String> target) {
+        try {
+            String[] files = am.list(folder);
+            if (files != null) {
+                for (String f : files) {
+                    String lower = f.toLowerCase();
+                    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png")) {
+                        target.add(folder + "/" + f);
+                    }
+                }
+                Collections.sort(target);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed scanning " + folder + ": " + t.getMessage());
+        }
+    }
+
+    public ThemeCategory getCategory() {
+        return currentCategory;
+    }
+
+    public void setCategory(ThemeCategory category) {
+        if (category == null) category = ThemeCategory.DYNAMIC_ABSTRACT;
+        this.currentCategory = category;
+
+        if (category == ThemeCategory.DYNAMIC_ABSTRACT) {
+            if (scaledWallpaper == null && rawWallpaper != null) {
+                initMesh(getWidth(), getHeight());
+            }
+            invalidate();
+        } else {
+            currentPhotoIndex = 0;
+            loadPhotoAsync(category, currentPhotoIndex, true);
+        }
+        rescheduleRotation();
+    }
+
+    public void setCategoryByName(String name) {
+        if (name == null) return;
+        for (ThemeCategory c : ThemeCategory.values()) {
+            if (c.name().equalsIgnoreCase(name)) {
+                setCategory(c);
+                return;
+            }
+        }
+    }
+
+    public List<String> getListForCategory(ThemeCategory cat) {
+        switch (cat) {
+            case NATURE: return natureWallpapers;
+            case SPACE: return spaceWallpapers;
+            case CITIES: return citiesWallpapers;
+            default: return Collections.emptyList();
+        }
+    }
+
+    public int getCurrentWallpaperCount() {
+        List<String> list = getListForCategory(currentCategory);
+        return list != null ? list.size() : 0;
+    }
+
+    public int getCurrentWallpaperIndex() {
+        return currentPhotoIndex;
+    }
+
+    public void nextWallpaper() {
+        if (currentCategory == ThemeCategory.DYNAMIC_ABSTRACT) {
+            cycleToNextTheme();
+        } else {
+            List<String> list = getListForCategory(currentCategory);
+            if (list == null || list.isEmpty()) return;
+            currentPhotoIndex = (currentPhotoIndex + 1) % list.size();
+            loadPhotoAsync(currentCategory, currentPhotoIndex, true);
+        }
+    }
+
+    public void previousWallpaper() {
+        if (currentCategory == ThemeCategory.DYNAMIC_ABSTRACT) {
+            int prev = (targetThemeIndex - 1 + THEMES.length) % THEMES.length;
+            setThemeIndex(prev);
+        } else {
+            List<String> list = getListForCategory(currentCategory);
+            if (list == null || list.isEmpty()) return;
+            currentPhotoIndex = (currentPhotoIndex - 1 + list.size()) % list.size();
+            loadPhotoAsync(currentCategory, currentPhotoIndex, true);
+        }
     }
 
     public void cycleToNextTheme() {
-        setThemeIndex((targetThemeIndex + 1) % THEMES.length);
+        if (currentCategory == ThemeCategory.DYNAMIC_ABSTRACT) {
+            setThemeIndex((targetThemeIndex + 1) % THEMES.length);
+        } else {
+            nextWallpaper();
+        }
+    }
+
+    private void loadPhotoAsync(ThemeCategory category, int index, boolean animateCrossfade) {
+        List<String> list = getListForCategory(category);
+        if (list == null || list.isEmpty()) {
+            discoverPhotoWallpapers();
+            list = getListForCategory(category);
+            if (list == null || list.isEmpty()) return;
+        }
+
+        int safeIdx = Math.abs(index % list.size());
+        String assetPath = list.get(safeIdx);
+
+        decodeExecutor.execute(() -> {
+            try {
+                Context ctx = getContext();
+                if (ctx == null) return;
+                AssetManager am = ctx.getAssets();
+
+                BitmapFactory.Options boundsOpts = new BitmapFactory.Options();
+                boundsOpts.inJustDecodeBounds = true;
+                InputStream is = am.open(assetPath);
+                BitmapFactory.decodeStream(is, null, boundsOpts);
+                is.close();
+
+                int targetW = Math.max(getWidth(), 1920);
+                int targetH = Math.max(getHeight(), 1080);
+
+                int sample = 1;
+                while ((boundsOpts.outWidth / (sample * 2)) >= targetW && (boundsOpts.outHeight / (sample * 2)) >= targetH) {
+                    sample *= 2;
+                }
+
+                BitmapFactory.Options decodeOpts = new BitmapFactory.Options();
+                decodeOpts.inSampleSize = sample;
+                decodeOpts.inPreferredConfig = Bitmap.Config.RGB_565;
+
+                is = am.open(assetPath);
+                Bitmap decoded = BitmapFactory.decodeStream(is, null, decodeOpts);
+                is.close();
+
+                if (decoded != null) {
+                    mainHandler.post(() -> {
+                        if (currentCategory != category) {
+                            decoded.recycle();
+                            return;
+                        }
+
+                        if (prevPhotoBitmap != null && !prevPhotoBitmap.isRecycled() && prevPhotoBitmap != currentPhotoBitmap) {
+                            prevPhotoBitmap.recycle();
+                        }
+                        prevPhotoBitmap = currentPhotoBitmap;
+                        currentPhotoBitmap = decoded;
+
+                        if (animateCrossfade && prevPhotoBitmap != null) {
+                            if (photoCrossfadeAnim != null && photoCrossfadeAnim.isRunning()) {
+                                photoCrossfadeAnim.cancel();
+                            }
+                            photoCrossfadeProgress = 0f;
+                            photoCrossfadeAnim = ValueAnimator.ofFloat(0f, 1f);
+                            photoCrossfadeAnim.setDuration(2200);
+                            photoCrossfadeAnim.setInterpolator(new AccelerateDecelerateInterpolator());
+                            photoCrossfadeAnim.addUpdateListener(anim -> {
+                                photoCrossfadeProgress = (float) anim.getAnimatedValue();
+                                invalidate();
+                            });
+                            photoCrossfadeAnim.start();
+                        } else {
+                            photoCrossfadeProgress = 1.0f;
+                            invalidate();
+                        }
+                    });
+                }
+            } catch (Throwable t) {
+                Log.w(TAG, "Error loading wallpaper " + assetPath + ": " + t.getMessage());
+            }
+        });
+    }
+
+    public void setAmbientGlow(int color, float focusX, float focusY) {
+        // Subtle ambient responsiveness
     }
 
     public void setThemeIndex(int newIndex) {
@@ -186,9 +430,8 @@ public class AnimatedWaveBackgroundView extends View {
             transitionAnimator.cancel();
         }
 
-        // Smooth 3.0-second cross-fade between shapes, animations, and color schemes
         transitionAnimator = ValueAnimator.ofFloat(0f, 1f);
-        transitionAnimator.setDuration(3000);
+        transitionAnimator.setDuration(2500);
         transitionAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
         transitionAnimator.addUpdateListener(anim -> {
             themeTransitionProgress = (float) anim.getAnimatedValue();
@@ -198,7 +441,12 @@ public class AnimatedWaveBackgroundView extends View {
             curSecondary = blendColors(prevSecondary, target.secondaryColor, themeTransitionProgress);
             curAmp = prevAmp + (target.waveAmplitude - prevAmp) * themeTransitionProgress;
 
-            updateColorFilter();
+            ColorMatrix cm = new ColorMatrix();
+            adjustHue(cm, curHue);
+            ColorMatrix satMatrix = new ColorMatrix();
+            satMatrix.setSaturation(curSat);
+            cm.postConcat(satMatrix);
+            wallpaperPaint.setColorFilter(new ColorMatrixColorFilter(cm));
             invalidate();
         });
         transitionAnimator.start();
@@ -208,116 +456,108 @@ public class AnimatedWaveBackgroundView extends View {
         return targetThemeIndex;
     }
 
-    public ThemeScheme getCurrentTheme() {
-        return THEMES[targetThemeIndex];
-    }
-
     public boolean isAutoRotateEnabled() {
         return autoRotateEnabled;
     }
 
     public void setAutoRotateEnabled(boolean enabled) {
         this.autoRotateEnabled = enabled;
-        autoRotateHandler.removeCallbacks(autoRotateRunnable);
-        if (enabled) {
-            autoRotateHandler.postDelayed(autoRotateRunnable, AUTO_ROTATE_DELAY_MS);
-        }
+        rescheduleRotation();
     }
 
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        if (continuousAnimator != null && !continuousAnimator.isRunning()) {
-            continuousAnimator.start();
-        }
-        autoRotateHandler.removeCallbacks(autoRotateRunnable);
-        if (autoRotateEnabled) {
-            autoRotateHandler.postDelayed(autoRotateRunnable, AUTO_ROTATE_DELAY_MS);
-        }
+    public long getRotationIntervalMs() {
+        return rotationIntervalMs;
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        if (continuousAnimator != null) continuousAnimator.cancel();
-        if (transitionAnimator != null) transitionAnimator.cancel();
-        autoRotateHandler.removeCallbacks(autoRotateRunnable);
+    public void setRotationIntervalMs(long ms) {
+        this.rotationIntervalMs = ms;
+        rescheduleRotation();
+    }
+
+    private void rescheduleRotation() {
+        mainHandler.removeCallbacks(autoRotateRunnable);
+        scheduleNextRotation();
+    }
+
+    private void scheduleNextRotation() {
+        if (autoRotateEnabled && rotationIntervalMs > 0) {
+            mainHandler.postDelayed(autoRotateRunnable, rotationIntervalMs);
+        }
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        if (w <= 0 || h <= 0) return;
-
-        if (rawWallpaper != null) {
-            scaledWallpaper = Bitmap.createScaledBitmap(rawWallpaper, w, h, true);
+        if (w > 0 && h > 0) {
+            initMesh(w, h);
+            initGradients(w, h);
+            if (currentCategory != ThemeCategory.DYNAMIC_ABSTRACT && currentPhotoBitmap == null) {
+                loadPhotoAsync(currentCategory, currentPhotoIndex, false);
+            }
         }
+    }
+
+    private void initGradients(int w, int h) {
+        LinearGradient bg = new LinearGradient(0, h * 0.45f, 0, h,
+                new int[]{0x00000000, 0x88000000, 0xD0000000},
+                new float[]{0.0f, 0.55f, 1.0f}, Shader.TileMode.CLAMP);
+        bottomGradientPaint = new Paint();
+        bottomGradientPaint.setShader(bg);
+
+        LinearGradient tg = new LinearGradient(0, 0, 0, h * 0.28f,
+                new int[]{0xB0000000, 0x50000000, 0x00000000},
+                new float[]{0.0f, 0.60f, 1.0f}, Shader.TileMode.CLAMP);
+        topGradientPaint = new Paint();
+        topGradientPaint.setShader(tg);
+    }
+
+    private void initMesh(int w, int h) {
+        if (rawWallpaper == null) return;
+        scaledWallpaper = Bitmap.createScaledBitmap(rawWallpaper, w, h, true);
 
         int index = 0;
         for (int y = 0; y <= MESH_HEIGHT; y++) {
-            float fy = (float) h * y / MESH_HEIGHT;
+            float fy = (float) y / MESH_HEIGHT * h;
             for (int x = 0; x <= MESH_WIDTH; x++) {
-                float fx = (float) w * x / MESH_WIDTH;
+                float fx = (float) x / MESH_WIDTH * w;
                 origVerts[index * 2] = fx;
                 origVerts[index * 2 + 1] = fy;
+                animVerts[index * 2] = fx;
+                animVerts[index * 2 + 1] = fy;
                 index++;
             }
         }
-        updateColorFilter();
-        updateMesh();
-    }
 
-    private void updateColorFilter() {
-        if (Math.abs(curHue) < 1f && Math.abs(curSat - 1.0f) < 0.05f) {
-            wallpaperPaint.setColorFilter(null);
-        } else {
-            ColorMatrix cm = new ColorMatrix();
-            adjustHue(cm, curHue);
-            ColorMatrix satMatrix = new ColorMatrix();
-            satMatrix.setSaturation(curSat);
-            cm.postConcat(satMatrix);
-            wallpaperPaint.setColorFilter(new ColorMatrixColorFilter(cm));
-        }
+        ColorMatrix cm = new ColorMatrix();
+        adjustHue(cm, curHue);
+        ColorMatrix satMatrix = new ColorMatrix();
+        satMatrix.setSaturation(curSat);
+        cm.postConcat(satMatrix);
+        wallpaperPaint.setColorFilter(new ColorMatrixColorFilter(cm));
     }
 
     private void updateMesh() {
+        if (scaledWallpaper == null || scaledWallpaper.isRecycled()) return;
         int w = getWidth();
         int h = getHeight();
         if (w <= 0 || h <= 0) return;
 
-        float amp = curAmp;
-        AbstractShape currentShape = THEMES[currentThemeIndex].shape;
+        AbstractShape curShape = THEMES[currentThemeIndex].shape;
         AbstractShape targetShape = THEMES[targetThemeIndex].shape;
-        float morphProgress = themeTransitionProgress;
 
         int index = 0;
         for (int y = 0; y <= MESH_HEIGHT; y++) {
             float normY = (float) y / MESH_HEIGHT;
-            float envY = (y == 0 || y == MESH_HEIGHT) ? 0f : (float) Math.sin(normY * Math.PI);
             for (int x = 0; x <= MESH_WIDTH; x++) {
+                float normX = (float) x / MESH_WIDTH;
                 float ox = origVerts[index * 2];
                 float oy = origVerts[index * 2 + 1];
 
-                if (x == 0 || x == MESH_WIDTH || y == 0 || y == MESH_HEIGHT) {
-                    animVerts[index * 2] = ox;
-                    animVerts[index * 2 + 1] = oy;
-                    index++;
-                    continue;
-                }
+                float[] dCur = computeDeformation(curShape, normX, normY, phase, prevAmp);
+                float[] dTar = computeDeformation(targetShape, normX, normY, phase, curAmp);
 
-                float normX = (float) x / MESH_WIDTH;
-                float envX = (float) Math.sin(normX * Math.PI);
-                // Smooth window envelope: 0 at all 4 screen borders, 0.42 in the interior
-                float edgePin = envX * envY * 0.42f;
-
-                // Compute displacement for previous shape
-                float[] dPrev = computeShapeDisplacement(currentShape, normX, normY, ox, oy, w, h, phase, amp);
-                // Compute displacement for target shape
-                float[] dTarget = computeShapeDisplacement(targetShape, normX, normY, ox, oy, w, h, phase, amp);
-
-                // Smooth morph between shapes during 3s transition
-                float dx = (dPrev[0] * (1f - morphProgress) + dTarget[0] * morphProgress) * edgePin;
-                float dy = (dPrev[1] * (1f - morphProgress) + dTarget[1] * morphProgress) * edgePin;
+                float dx = dCur[0] + (dTar[0] - dCur[0]) * themeTransitionProgress;
+                float dy = dCur[1] + (dTar[1] - dCur[1]) * themeTransitionProgress;
 
                 animVerts[index * 2] = ox + dx;
                 animVerts[index * 2 + 1] = oy + dy;
@@ -326,57 +566,40 @@ public class AnimatedWaveBackgroundView extends View {
         }
     }
 
-    /**
-     * Computes the mathematical displacement vector for each vertex.
-     * All harmonic phase multipliers are STRICTLY INTEGERS (1, 2, 3), ensuring:
-     * sin(theta + k * 2*PI) == sin(theta + 0) and cos(theta + k * 2*PI) == cos(theta + 0).
-     * This mathematical invariance guarantees zero frame skipping or discontinuity when the cycle loops.
-     */
-    private float[] computeShapeDisplacement(AbstractShape shape, float normX, float normY, float ox, float oy, int w, int h, float p, float amp) {
+    private float[] computeDeformation(AbstractShape shape, float normX, float normY, float p, float amp) {
         float dx = 0f;
         float dy = 0f;
 
         switch (shape) {
             case SILK_RIBBONS:
-                // Smooth horizontal undulating liquid silk currents (Obsidian Violet)
                 dx = amp * (55f * (float) Math.sin((normY * 2.8) + p)
-                        + 25f * (float) Math.cos((normX * 3.6) - p));
-                dy = amp * (65f * (float) Math.cos((normX * 2.2) + p)
-                        + 30f * (float) Math.sin((normY * 2.8) - 2.0 * p));
+                        + 25f * (float) Math.cos((normX * 1.8) - 1.5 * p));
+                dy = amp * (30f * (float) Math.cos((normX * 2.2) + p)
+                        + 15f * (float) Math.sin((normY * 2.0) - p));
                 break;
-
             case AURORA_CURTAINS:
-                // Gentle vertical cascading liquid streams (Emerald Green)
                 dx = amp * (35f * (float) Math.sin((normX * 4.2) + p));
                 dy = amp * (70f * (float) Math.sin((normX * 2.5) - p)
                         + 35f * (float) Math.cos((normY * 3.2) + 2.0 * p));
                 break;
-
             case COSMIC_VORTEX:
-                // Broad, smooth liquid tidal surge (Crimson Red) - pure flowing lines, zero twirling
                 dx = amp * (65f * (float) Math.sin((normX * 2.2 + normY * 1.5) * Math.PI * 0.8 + p)
                         + 28f * (float) Math.cos((normY * 3.0) - p));
                 dy = amp * (75f * (float) Math.cos((normX * 1.8 - normY * 2.0) * Math.PI * 0.8 - p)
                         + 30f * (float) Math.sin((normX * 2.4) + 2.0 * p));
                 break;
-
             case GEOMETRIC_PRISMS:
-                // Smooth diagonal laminar liquid glass flow (Deep Sapphire Blue)
                 float streamPhase = (normX * 1.8f + normY * 1.4f) * (float) Math.PI - p;
                 float crossDrift = (normX * 1.2f - normY * 1.6f) * (float) Math.PI + p;
                 dx = amp * (60f * (float) Math.cos(streamPhase) + 25f * (float) Math.sin(crossDrift));
                 dy = amp * (70f * (float) Math.sin(streamPhase) - 30f * (float) Math.cos(crossDrift));
                 break;
-
             case TOPOGRAPHIC_DUNES:
-                // Warm rolling fluid contour waves (Solar Amber)
                 dx = amp * (45f * (float) Math.sin((normY * 2.6) + p) + 20f * (float) Math.cos((normX * 2.0) - p));
                 dy = amp * (75f * (float) Math.sin((normX * 1.8) + p) * (float) Math.sin(normY * Math.PI)
                         + 30f * (float) Math.cos((normY * 3.4) - 2.0 * p));
                 break;
-
             case CYBER_SYNTH_GRID:
-                // Smooth concentric circular liquid ripples (Electric Magenta) - zero rotation
                 float distX = normX - 0.5f;
                 float distY = normY - 0.5f;
                 float distCenter = (float) Math.sqrt(distX * distX + distY * distY);
@@ -396,9 +619,55 @@ public class AnimatedWaveBackgroundView extends View {
         int h = getHeight();
         if (w <= 0 || h <= 0) return;
 
-        if (scaledWallpaper != null && !scaledWallpaper.isRecycled()) {
-            canvas.drawBitmapMesh(scaledWallpaper, MESH_WIDTH, MESH_HEIGHT, animVerts, 0, null, 0, wallpaperPaint);
+        if (currentCategory == ThemeCategory.DYNAMIC_ABSTRACT) {
+            if (scaledWallpaper != null && !scaledWallpaper.isRecycled()) {
+                canvas.drawBitmapMesh(scaledWallpaper, MESH_WIDTH, MESH_HEIGHT, animVerts, 0, null, 0, wallpaperPaint);
+            }
+            return;
         }
+
+        // Draw Photo Slideshow for Nature, Space, Cities
+        // 1. Draw previous photo during crossfade
+        if (photoCrossfadeProgress < 1.0f && prevPhotoBitmap != null && !prevPhotoBitmap.isRecycled()) {
+            prevPhotoPaint.setAlpha(255);
+            drawCoverBitmap(canvas, prevPhotoBitmap, w, h, prevPhotoPaint);
+        }
+
+        // 2. Draw current photo
+        if (currentPhotoBitmap != null && !currentPhotoBitmap.isRecycled()) {
+            int alpha = (int) (255 * Math.min(1.0f, Math.max(0.0f, photoCrossfadeProgress)));
+            photoPaint.setAlpha(alpha);
+            drawCoverBitmap(canvas, currentPhotoBitmap, w, h, photoPaint);
+        }
+
+        // 3. Elegant contrast vignette overlays
+        canvas.drawColor(0x33000000); // 20% overall dark wash for crystal clear icon/text contrast
+        if (topGradientPaint != null) {
+            canvas.drawRect(0, 0, w, h * 0.28f, topGradientPaint);
+        }
+        if (bottomGradientPaint != null) {
+            canvas.drawRect(0, h * 0.45f, w, h, bottomGradientPaint);
+        }
+    }
+
+    private void drawCoverBitmap(Canvas canvas, Bitmap bmp, int viewW, int viewH, Paint paint) {
+        int bw = bmp.getWidth();
+        int bh = bmp.getHeight();
+        if (bw <= 0 || bh <= 0) return;
+
+        float scale = Math.max((float) viewW / bw, (float) viewH / bh);
+        // Subtle slow Ken Burns drift (scale gently between 1.0f and 1.025f)
+        float drift = 1.0f + 0.02f * (float) (0.5 + 0.5 * Math.sin(phase * 0.5));
+        scale *= drift;
+
+        float scaledW = bw * scale;
+        float scaledH = bh * scale;
+        float left = (viewW - scaledW) / 2f;
+        float top = (viewH - scaledH) / 2f;
+
+        Rect src = new Rect(0, 0, bw, bh);
+        RectF dst = new RectF(left, top, left + scaledW, top + scaledH);
+        canvas.drawBitmap(bmp, src, dst, paint);
     }
 
     private static void adjustHue(ColorMatrix cm, float value) {

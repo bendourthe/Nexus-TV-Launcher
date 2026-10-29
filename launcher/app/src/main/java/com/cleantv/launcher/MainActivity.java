@@ -72,6 +72,8 @@ public class MainActivity extends Activity {
     private static final String PREFS_NAME = "CleanTvLauncherPrefs";
     private static final String KEY_DOCK_PACKAGES = "dock_packages";
     private static final String KEY_THEME_INDEX = "theme_index";
+    private static final String KEY_THEME_CATEGORY = "theme_category";
+    private static final String KEY_ROTATION_INTERVAL = "theme_rotation_interval";
     private static final String KEY_AUTO_ROTATE = "auto_rotate";
 
     // 6 requested dock apps supporting both Google TV / Android TV and Amazon Fire
@@ -143,6 +145,13 @@ public class MainActivity extends Activity {
         MainActivity inst = sInstance;
         if (inst != null) {
             inst.mainHandler.post(inst::dismissAllDialogsAndResetToHome);
+        }
+    }
+
+    public static void requestShowInputsMenuFromService() {
+        MainActivity inst = sInstance;
+        if (inst != null) {
+            inst.mainHandler.post(inst::showInputsDialog);
         }
     }
 
@@ -419,6 +428,9 @@ public class MainActivity extends Activity {
         if (intent != null && intent.getBooleanExtra("EXTRA_OPEN_USER_MENU", false)) {
             getWindow().getDecorView().post(this::showProfileSelectionDialog);
         }
+        if (intent != null && intent.getBooleanExtra("EXTRA_OPEN_INPUTS_MENU", false)) {
+            getWindow().getDecorView().post(this::showInputsDialog);
+        }
     }
 
     @Override
@@ -575,10 +587,14 @@ public class MainActivity extends Activity {
             sp.edit().putBoolean("v3_dock_updated", true).apply();
         }
 
-        // Load theme index and auto-rotation
+        // Load theme category, rotation interval, theme index and auto-rotation
+        String themeCat = sp.getString(KEY_THEME_CATEGORY, AnimatedWaveBackgroundView.ThemeCategory.DYNAMIC_ABSTRACT.name());
+        long interval = sp.getLong(KEY_ROTATION_INTERVAL, AnimatedWaveBackgroundView.DEFAULT_ROTATION_INTERVAL_MS);
         int themeIdx = sp.getInt(KEY_THEME_INDEX, 0);
         boolean autoRotate = sp.getBoolean(KEY_AUTO_ROTATE, true);
         if (animatedBackground != null) {
+            animatedBackground.setCategoryByName(themeCat);
+            animatedBackground.setRotationIntervalMs(interval);
             animatedBackground.setThemeIndex(themeIdx);
             animatedBackground.setAutoRotateEnabled(autoRotate);
         }
@@ -2170,19 +2186,23 @@ public class MainActivity extends Activity {
                 tile.addView(badge);
             }
 
+            tile.setClipChildren(false);
+            tile.setClipToPadding(false);
             tile.setOnFocusChangeListener((v, hasFocus) -> {
                 if (hasFocus) {
                     tile.setBackground(focusedBg);
                     tvName.setTextColor(0xFF0A0A0E);
                     tvStatus.setTextColor(0xFF383842);
                     tile.setTranslationZ(4f * density);
-                    ivAvatar.animate().scaleX(1.08f).scaleY(1.08f).setDuration(150).start();
+                    ivAvatar.setScaleX(1.0f);
+                    ivAvatar.setScaleY(1.0f);
                 } else {
                     tile.setBackground(defaultBg);
                     tvName.setTextColor(Color.WHITE);
                     tvStatus.setTextColor(isActive ? 0xFF00E5FF : 0xFF8E8E98);
                     tile.setTranslationZ(0f);
-                    ivAvatar.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start();
+                    ivAvatar.setScaleX(1.0f);
+                    ivAvatar.setScaleY(1.0f);
                 }
             });
 
@@ -2418,12 +2438,14 @@ public class MainActivity extends Activity {
                     boolean isSelected = character.id.equalsIgnoreCase(selectedIcon[0]);
                     boolean hasFocus = charTile.hasFocus();
 
+                    charTile.setClipChildren(false);
+                    charTile.setClipToPadding(false);
                     GradientDrawable bg = new GradientDrawable();
                     if (hasFocus) {
                         bg.setColor(0x45FFFFFF);
                         bg.setStroke((int) (3f * density), 0xFFFFFFFF);
-                        ivChar.setScaleX(1.08f);
-                        ivChar.setScaleY(1.08f);
+                        ivChar.setScaleX(1.0f);
+                        ivChar.setScaleY(1.0f);
                         tvCharLabel.setTextColor(0xFFFFFFFF);
                     } else if (isSelected) {
                         bg.setColor(0x2800E5FF);
@@ -2674,9 +2696,74 @@ public class MainActivity extends Activity {
         showTrackedBuilder(builder);
     }
 
+    private String getIntervalLabel(long ms) {
+        if (ms == 60_000L) return "1 Minute";
+        if (ms == 300_000L) return "5 Minutes (Default)";
+        if (ms == 900_000L) return "15 Minutes";
+        if (ms == 1_800_000L) return "30 Minutes";
+        if (ms == 3_600_000L) return "1 Hour";
+        if (ms <= 0L) return "Off (Static)";
+        return (ms / 60_000L) + " Minutes";
+    }
+
+    private long getNextInterval(long cur) {
+        long[] arr = AnimatedWaveBackgroundView.ROTATION_INTERVALS;
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == cur) {
+                return arr[(i + 1) % arr.length];
+            }
+        }
+        return AnimatedWaveBackgroundView.DEFAULT_ROTATION_INTERVAL_MS;
+    }
+
+    private LinearLayout createSubActionButton(String label, Runnable action, float density) {
+        LinearLayout btn = new LinearLayout(this);
+        btn.setOrientation(LinearLayout.HORIZONTAL);
+        btn.setGravity(android.view.Gravity.CENTER);
+        btn.setFocusable(true);
+        btn.setClickable(true);
+        int vPad = (int) (10 * density);
+        int hPad = (int) (14 * density);
+        btn.setPadding(hPad, vPad, hPad, vPad);
+
+        TextView tv = new TextView(this);
+        tv.setText(label);
+        tv.setTextColor(Color.WHITE);
+        tv.setTextSize(13f);
+        if (outfitTypeface != null) tv.setTypeface(outfitTypeface, Typeface.BOLD);
+        btn.addView(tv);
+
+        GradientDrawable defBg = new GradientDrawable();
+        defBg.setColor(0x22FFFFFF);
+        defBg.setCornerRadius(10 * density);
+        defBg.setStroke((int) (1f * density), 0x33FFFFFF);
+        btn.setBackground(defBg);
+
+        btn.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                btn.setBackgroundColor(0xFFFFFFFF);
+                tv.setTextColor(0xFF090A10);
+            } else {
+                GradientDrawable b = new GradientDrawable();
+                b.setColor(0x22FFFFFF);
+                b.setCornerRadius(10 * density);
+                b.setStroke((int) (1f * density), 0x33FFFFFF);
+                btn.setBackground(b);
+                tv.setTextColor(Color.WHITE);
+            }
+        });
+
+        btn.setOnClickListener(v -> {
+            if (action != null) action.run();
+        });
+
+        return btn;
+    }
+
     private void showThemeDialog() {
         final float density = getResources().getDisplayMetrics().density;
-        boolean autoRotate = animatedBackground.isAutoRotateEnabled();
+        final AlertDialog[] dialogHolder = new AlertDialog[1];
+        AnimatedWaveBackgroundView.ThemeCategory curCat = animatedBackground.getCategory();
         int curIdx = animatedBackground.getCurrentThemeIndex();
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert);
@@ -2691,152 +2778,309 @@ public class MainActivity extends Activity {
         int pad = (int) (18 * density);
         root.setPadding(pad, pad, pad, pad);
 
-        // Auto rotate toggle
-        LinearLayout autoTile = new LinearLayout(this);
-        autoTile.setOrientation(LinearLayout.HORIZONTAL);
-        autoTile.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        autoTile.setFocusable(true);
-        autoTile.setClickable(true);
-        int aPad = (int) (12 * density);
-        autoTile.setPadding(aPad, aPad, aPad, aPad);
-        LinearLayout.LayoutParams autoLp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        autoLp.bottomMargin = (int) (14 * density);
-        autoTile.setLayoutParams(autoLp);
+        // Header
+        TextView tvCatHeader = new TextView(this);
+        tvCatHeader.setText("THEME SELECTION");
+        tvCatHeader.setTextColor(0xFF00E5FF);
+        tvCatHeader.setTextSize(12f);
+        if (outfitTypeface != null) tvCatHeader.setTypeface(outfitTypeface, Typeface.BOLD);
+        tvCatHeader.setPadding(0, 0, 0, (int) (8 * density));
+        root.addView(tvCatHeader);
 
-        TextView tvAuto = new TextView(this);
-        tvAuto.setText("Auto-Change Every 5 Minutes: " + (autoRotate ? "ON" : "OFF"));
-        tvAuto.setTextColor(0xFFFFFFFF);
-        tvAuto.setTextSize(14f);
-        if (outfitTypeface != null) tvAuto.setTypeface(outfitTypeface, Typeface.BOLD);
-        autoTile.addView(tvAuto);
+        // 4 Theme Category Cards
+        AnimatedWaveBackgroundView.ThemeCategory[] categories = AnimatedWaveBackgroundView.ThemeCategory.values();
+        List<View> catCards = new ArrayList<>();
 
-        GradientDrawable autoBg = new GradientDrawable();
-        autoBg.setColor(autoRotate ? 0x3300E5FF : 0x22FFFFFF);
-        autoBg.setCornerRadius(12 * density);
-        autoBg.setStroke((int) (1.2f * density), autoRotate ? 0xFF00E5FF : 0x33FFFFFF);
-        autoTile.setBackground(autoBg);
-
-        autoTile.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                autoTile.setBackgroundColor(0xFFFFFFFF);
-                tvAuto.setTextColor(0xFF090A10);
-            } else {
-                boolean curAuto = animatedBackground.isAutoRotateEnabled();
-                GradientDrawable b = new GradientDrawable();
-                b.setColor(curAuto ? 0x3300E5FF : 0x22FFFFFF);
-                b.setCornerRadius(12 * density);
-                b.setStroke((int) (1.2f * density), curAuto ? 0xFF00E5FF : 0x33FFFFFF);
-                autoTile.setBackground(b);
-                tvAuto.setTextColor(0xFFFFFFFF);
-            }
-        });
-
-        root.addView(autoTile);
-
-        // Gallery of Themes with Visual Gradient Cards
-        for (int i = 0; i < AnimatedWaveBackgroundView.THEMES.length; i++) {
-            final int themeIdx = i;
-            AnimatedWaveBackgroundView.ThemeScheme t = AnimatedWaveBackgroundView.THEMES[i];
-            boolean isCur = (i == curIdx);
-
+        for (AnimatedWaveBackgroundView.ThemeCategory cat : categories) {
             LinearLayout card = new LinearLayout(this);
-            card.setOrientation(LinearLayout.HORIZONTAL);
-            card.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            card.setOrientation(LinearLayout.VERTICAL);
             card.setFocusable(true);
             card.setClickable(true);
-            int cPadH = (int) (16 * density);
-            int cPadV = (int) (12 * density);
-            card.setPadding(cPadH, cPadV, cPadH, cPadV);
+            int cPad = (int) (12 * density);
+            card.setPadding(cPad, cPad, cPad, cPad);
             LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, (int) (58 * density));
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             cLp.bottomMargin = (int) (10 * density);
             card.setLayoutParams(cLp);
 
-            // Left: Visual Palette Swatch (Circle with gradient)
-            View swatch = new View(this);
-            int sPx = (int) (32 * density);
-            LinearLayout.LayoutParams sLp = new LinearLayout.LayoutParams(sPx, sPx);
-            sLp.setMarginEnd((int) (14 * density));
-            sLp.rightMargin = (int) (14 * density);
-            swatch.setLayoutParams(sLp);
-            GradientDrawable sBg = new GradientDrawable(
-                    GradientDrawable.Orientation.TL_BR,
-                    new int[]{t.accentColor, t.secondaryColor}
-            );
-            sBg.setShape(GradientDrawable.OVAL);
-            swatch.setBackground(sBg);
-            card.addView(swatch);
+            LinearLayout topRow = new LinearLayout(this);
+            topRow.setOrientation(LinearLayout.HORIZONTAL);
+            topRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
 
-            // Middle: Name
-            TextView tvName = new TextView(this);
-            tvName.setText(t.name);
-            tvName.setTextColor(0xFFFFFFFF);
-            tvName.setTextSize(14f);
-            LinearLayout.LayoutParams nLp = new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            tvName.setLayoutParams(nLp);
-            if (outfitTypeface != null) tvName.setTypeface(outfitTypeface, isCur ? Typeface.BOLD : Typeface.NORMAL);
-            card.addView(tvName);
+            TextView tvTitle = new TextView(this);
+            tvTitle.setText(cat.title);
+            tvTitle.setTextSize(15f);
+            tvTitle.setTextColor(Color.WHITE);
+            if (outfitTypeface != null) tvTitle.setTypeface(outfitTypeface, Typeface.BOLD);
+            LinearLayout.LayoutParams tLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            topRow.addView(tvTitle, tLp);
 
-            // Right: Active badge
-            TextView tvActive = new TextView(this);
-            tvActive.setText("ACTIVE");
-            tvActive.setTextColor(0xFF00E5FF);
-            tvActive.setTextSize(11f);
-            tvActive.setVisibility(isCur ? View.VISIBLE : View.GONE);
-            if (outfitTypeface != null) tvActive.setTypeface(outfitTypeface, Typeface.BOLD);
-            card.addView(tvActive);
+            TextView tvBadge = new TextView(this);
+            tvBadge.setText("ACTIVE");
+            tvBadge.setTextSize(11f);
+            tvBadge.setTextColor(0xFF00E5FF);
+            if (outfitTypeface != null) tvBadge.setTypeface(outfitTypeface, Typeface.BOLD);
+            topRow.addView(tvBadge);
 
-            Runnable updateCardBg = () -> {
+            card.addView(topRow);
+
+            TextView tvDesc = new TextView(this);
+            tvDesc.setText(cat.description);
+            tvDesc.setTextSize(12f);
+            tvDesc.setTextColor(0xFF9E9EA8);
+            tvDesc.setPadding(0, (int) (4 * density), 0, 0);
+            if (outfitTypeface != null) tvDesc.setTypeface(outfitTypeface);
+            card.addView(tvDesc);
+
+            catCards.add(card);
+
+            Runnable updateCard = () -> {
+                boolean isCur = (cat == animatedBackground.getCategory());
                 boolean hasFocus = card.hasFocus();
-                boolean cur = (themeIdx == animatedBackground.getCurrentThemeIndex());
-                tvActive.setVisibility(cur ? View.VISIBLE : View.GONE);
+                tvBadge.setVisibility(isCur ? View.VISIBLE : View.GONE);
                 if (hasFocus) {
                     card.setBackgroundColor(0xFFFFFFFF);
-                    tvName.setTextColor(0xFF090A10);
-                    tvActive.setTextColor(0xFF0091EA);
+                    tvTitle.setTextColor(0xFF090A10);
+                    tvDesc.setTextColor(0xFF383842);
+                    tvBadge.setTextColor(0xFF0091EA);
                 } else {
-                    GradientDrawable bg = new GradientDrawable(
-                            GradientDrawable.Orientation.LEFT_RIGHT,
-                            new int[]{0x2AFFFFFF, 0x15FFFFFF}
-                    );
+                    GradientDrawable bg = new GradientDrawable();
+                    bg.setColor(isCur ? 0x2800E5FF : 0x1AFFFFFF);
                     bg.setCornerRadius(12 * density);
-                    bg.setStroke((int) (1.2f * density), cur ? 0xAA00E5FF : 0x22FFFFFF);
+                    bg.setStroke((int) (1.2f * density), isCur ? 0xCC00E5FF : 0x22FFFFFF);
                     card.setBackground(bg);
-                    tvName.setTextColor(0xFFFFFFFF);
-                    tvActive.setTextColor(0xFF00E5FF);
+                    tvTitle.setTextColor(Color.WHITE);
+                    tvDesc.setTextColor(0xFF9E9EA8);
+                    tvBadge.setTextColor(0xFF00E5FF);
                 }
             };
 
-            card.setOnFocusChangeListener((v, hasFocus) -> updateCardBg.run());
-            updateCardBg.run();
+            card.setOnFocusChangeListener((v, hasFocus) -> updateCard.run());
+            updateCard.run();
 
             card.setOnClickListener(v -> {
-                animatedBackground.setThemeIndex(themeIdx);
+                animatedBackground.setCategory(cat);
                 getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                        .edit().putInt(KEY_THEME_INDEX, themeIdx).apply();
-                Toast.makeText(this, "Theme set to " + t.name, Toast.LENGTH_SHORT).show();
-                for (int c = 1; c < root.getChildCount(); c++) {
-                    root.getChildAt(c).invalidate();
+                        .edit().putString(KEY_THEME_CATEGORY, cat.name()).apply();
+                Toast.makeText(this, "Theme switched to " + cat.title, Toast.LENGTH_SHORT).show();
+                if (dialogHolder[0] != null) {
+                    dialogHolder[0].dismiss();
                 }
+                showThemeDialog();
             });
 
             root.addView(card);
         }
 
-        autoTile.setOnClickListener(v -> {
-            boolean newAuto = !animatedBackground.isAutoRotateEnabled();
-            animatedBackground.setAutoRotateEnabled(newAuto);
-            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean(KEY_AUTO_ROTATE, newAuto).apply();
-            tvAuto.setText("Auto-Change Every 5 Minutes: " + (newAuto ? "ON" : "OFF"));
-            Toast.makeText(this, "Auto-change every 5 min: " + (newAuto ? "Enabled" : "Disabled"), Toast.LENGTH_SHORT).show();
+        // Section Divider
+        View div = new View(this);
+        LinearLayout.LayoutParams dLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, (int) (1 * density));
+        dLp.setMargins(0, (int) (8 * density), 0, (int) (14 * density));
+        div.setLayoutParams(dLp);
+        div.setBackgroundColor(0x22FFFFFF);
+        root.addView(div);
+
+        // Slideshow Interval Selector
+        LinearLayout intervalTile = new LinearLayout(this);
+        intervalTile.setOrientation(LinearLayout.HORIZONTAL);
+        intervalTile.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        intervalTile.setFocusable(true);
+        intervalTile.setClickable(true);
+        int iPad = (int) (12 * density);
+        intervalTile.setPadding(iPad, iPad, iPad, iPad);
+        LinearLayout.LayoutParams intLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        intLp.bottomMargin = (int) (12 * density);
+        intervalTile.setLayoutParams(intLp);
+
+        TextView tvIntLabel = new TextView(this);
+        tvIntLabel.setText("Slideshow Rotation Interval");
+        tvIntLabel.setTextSize(14f);
+        tvIntLabel.setTextColor(Color.WHITE);
+        if (outfitTypeface != null) tvIntLabel.setTypeface(outfitTypeface, Typeface.BOLD);
+        LinearLayout.LayoutParams intLblLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        intervalTile.addView(tvIntLabel, intLblLp);
+
+        TextView tvIntValue = new TextView(this);
+        tvIntValue.setText(getIntervalLabel(animatedBackground.getRotationIntervalMs()));
+        tvIntValue.setTextSize(13f);
+        tvIntValue.setTextColor(0xFF00E5FF);
+        if (outfitTypeface != null) tvIntValue.setTypeface(outfitTypeface, Typeface.BOLD);
+        intervalTile.addView(tvIntValue);
+
+        intervalTile.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                intervalTile.setBackgroundColor(0xFFFFFFFF);
+                tvIntLabel.setTextColor(0xFF090A10);
+                tvIntValue.setTextColor(0xFF0091EA);
+            } else {
+                GradientDrawable b = new GradientDrawable();
+                b.setColor(0x22FFFFFF);
+                b.setCornerRadius(12 * density);
+                b.setStroke((int) (1.2f * density), 0x33FFFFFF);
+                intervalTile.setBackground(b);
+                tvIntLabel.setTextColor(Color.WHITE);
+                tvIntValue.setTextColor(0xFF00E5FF);
+            }
         });
+        GradientDrawable bDef = new GradientDrawable();
+        bDef.setColor(0x22FFFFFF);
+        bDef.setCornerRadius(12 * density);
+        bDef.setStroke((int) (1.2f * density), 0x33FFFFFF);
+        intervalTile.setBackground(bDef);
+
+        intervalTile.setOnClickListener(v -> {
+            long curInt = animatedBackground.getRotationIntervalMs();
+            long nextInt = getNextInterval(curInt);
+            animatedBackground.setRotationIntervalMs(nextInt);
+            animatedBackground.setAutoRotateEnabled(nextInt > 0);
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                    .putLong(KEY_ROTATION_INTERVAL, nextInt)
+                    .putBoolean(KEY_AUTO_ROTATE, nextInt > 0).apply();
+            tvIntValue.setText(getIntervalLabel(nextInt));
+            Toast.makeText(this, "Slideshow interval: " + getIntervalLabel(nextInt), Toast.LENGTH_SHORT).show();
+        });
+
+        root.addView(intervalTile);
+
+        // Slideshow controls if in Photo mode (Nature, Space, Cities)
+        if (curCat != AnimatedWaveBackgroundView.ThemeCategory.DYNAMIC_ABSTRACT) {
+            int count = animatedBackground.getCurrentWallpaperCount();
+            int curPhotoIdx = animatedBackground.getCurrentWallpaperIndex() + 1;
+
+            TextView tvCount = new TextView(this);
+            tvCount.setText("Curated 4K Collection: " + count + " Sharp Landscapes & Astrophotography");
+            tvCount.setTextSize(12f);
+            tvCount.setTextColor(0xFFBBBBCC);
+            tvCount.setPadding(0, 0, 0, (int) (8 * density));
+            if (outfitTypeface != null) tvCount.setTypeface(outfitTypeface);
+            root.addView(tvCount);
+
+            LinearLayout photoNavRow = new LinearLayout(this);
+            photoNavRow.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            pLp.bottomMargin = (int) (10 * density);
+            photoNavRow.setLayoutParams(pLp);
+
+            LinearLayout btnPrev = createSubActionButton("Previous 4K Image", () -> {
+                animatedBackground.previousWallpaper();
+                Toast.makeText(this, "Showing previous 4K wallpaper", Toast.LENGTH_SHORT).show();
+            }, density);
+            LinearLayout.LayoutParams btnPrevLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            btnPrevLp.setMarginEnd((int) (8 * density));
+            btnPrevLp.rightMargin = (int) (8 * density);
+            btnPrev.setLayoutParams(btnPrevLp);
+            photoNavRow.addView(btnPrev);
+
+            LinearLayout btnNext = createSubActionButton("Next 4K Image", () -> {
+                animatedBackground.nextWallpaper();
+                Toast.makeText(this, "Showing next 4K wallpaper", Toast.LENGTH_SHORT).show();
+            }, density);
+            LinearLayout.LayoutParams btnNextLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            btnNext.setLayoutParams(btnNextLp);
+            photoNavRow.addView(btnNext);
+
+            root.addView(photoNavRow);
+        } else {
+            // Dynamic Abstract Palettes
+            TextView tvPalHeader = new TextView(this);
+            tvPalHeader.setText("ABSTRACT FLUID PALETTES");
+            tvPalHeader.setTextColor(0xFF00E5FF);
+            tvPalHeader.setTextSize(12f);
+            if (outfitTypeface != null) tvPalHeader.setTypeface(outfitTypeface, Typeface.BOLD);
+            tvPalHeader.setPadding(0, 0, 0, (int) (8 * density));
+            root.addView(tvPalHeader);
+
+            for (int i = 0; i < AnimatedWaveBackgroundView.THEMES.length; i++) {
+                final int themeIdx = i;
+                AnimatedWaveBackgroundView.ThemeScheme t = AnimatedWaveBackgroundView.THEMES[i];
+                boolean isCur = (i == curIdx);
+
+                LinearLayout pCard = new LinearLayout(this);
+                pCard.setOrientation(LinearLayout.HORIZONTAL);
+                pCard.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                pCard.setFocusable(true);
+                pCard.setClickable(true);
+                int cPadH = (int) (16 * density);
+                int cPadV = (int) (12 * density);
+                pCard.setPadding(cPadH, cPadV, cPadH, cPadV);
+                LinearLayout.LayoutParams pcLp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, (int) (52 * density));
+                pcLp.bottomMargin = (int) (8 * density);
+                pCard.setLayoutParams(pcLp);
+
+                View swatch = new View(this);
+                int sPx = (int) (28 * density);
+                LinearLayout.LayoutParams sLp = new LinearLayout.LayoutParams(sPx, sPx);
+                sLp.setMarginEnd((int) (12 * density));
+                sLp.rightMargin = (int) (12 * density);
+                swatch.setLayoutParams(sLp);
+                GradientDrawable sBg = new GradientDrawable(
+                        GradientDrawable.Orientation.TL_BR,
+                        new int[]{t.accentColor, t.secondaryColor}
+                );
+                sBg.setShape(GradientDrawable.OVAL);
+                swatch.setBackground(sBg);
+                pCard.addView(swatch);
+
+                TextView tvPName = new TextView(this);
+                tvPName.setText(t.name);
+                tvPName.setTextColor(Color.WHITE);
+                tvPName.setTextSize(13f);
+                if (outfitTypeface != null) tvPName.setTypeface(outfitTypeface);
+                pCard.addView(tvPName, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+                TextView tvPActive = new TextView(this);
+                tvPActive.setText("ACTIVE");
+                tvPActive.setTextColor(0xFF00E5FF);
+                tvPActive.setTextSize(11f);
+                tvPActive.setVisibility(isCur ? View.VISIBLE : View.GONE);
+                if (outfitTypeface != null) tvPActive.setTypeface(outfitTypeface, Typeface.BOLD);
+                pCard.addView(tvPActive);
+
+                Runnable updatePCard = () -> {
+                    boolean hasFocus = pCard.hasFocus();
+                    boolean cur = (themeIdx == animatedBackground.getCurrentThemeIndex());
+                    tvPActive.setVisibility(cur ? View.VISIBLE : View.GONE);
+                    if (hasFocus) {
+                        pCard.setBackgroundColor(0xFFFFFFFF);
+                        tvPName.setTextColor(0xFF090A10);
+                        tvPActive.setTextColor(0xFF0091EA);
+                    } else {
+                        GradientDrawable bg = new GradientDrawable();
+                        bg.setColor(0x1AFFFFFF);
+                        bg.setCornerRadius(10 * density);
+                        bg.setStroke((int) (1f * density), cur ? 0xAA00E5FF : 0x22FFFFFF);
+                        pCard.setBackground(bg);
+                        tvPName.setTextColor(Color.WHITE);
+                        tvPActive.setTextColor(0xFF00E5FF);
+                    }
+                };
+
+                pCard.setOnFocusChangeListener((v, hasFocus) -> updatePCard.run());
+                updatePCard.run();
+
+                pCard.setOnClickListener(v -> {
+                    animatedBackground.setThemeIndex(themeIdx);
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                            .edit().putInt(KEY_THEME_INDEX, themeIdx).apply();
+                    Toast.makeText(this, "Palette set to " + t.name, Toast.LENGTH_SHORT).show();
+                    for (int c = 0; c < root.getChildCount(); c++) {
+                        root.getChildAt(c).invalidate();
+                    }
+                });
+
+                root.addView(pCard);
+            }
+        }
 
         sv.addView(root);
         builder.setView(sv);
         builder.setNegativeButton("Done", null);
-        showTrackedBuilder(builder);
+        AlertDialog dialog = showTrackedBuilder(builder);
+        dialogHolder[0] = dialog;
     }
 
     private void showCustomizeDialog() {
@@ -2995,35 +3239,44 @@ public class MainActivity extends Activity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int keyCode = event.getKeyCode();
+        int action = event.getAction();
+        Log.i("RemoteKey", "dispatchKeyEvent: keyCode=" + keyCode + " (" + KeyEvent.keyCodeToString(keyCode) + ") action=" + action);
+
         if (keyCode == KeyEvent.KEYCODE_HOME) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (action == KeyEvent.ACTION_DOWN) {
                 dismissAllDialogsAndResetToHome();
             }
             return true;
         }
-        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+        if (action == KeyEvent.ACTION_DOWN) {
             HomeButtonAccessibilityService.onUserInteractedWithMainActivity();
         }
         if (HomeButtonAccessibilityService.isAppShortcutKey(keyCode)) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (action == KeyEvent.ACTION_DOWN) {
                 HomeButtonAccessibilityService.handleAppShortcutKeyIfMatched(this, keyCode);
             }
             return true;
         }
+        if (HomeButtonAccessibilityService.isInputKey(keyCode)) {
+            if (action == KeyEvent.ACTION_DOWN) {
+                showInputsDialog();
+            }
+            return true;
+        }
         if (HomeButtonAccessibilityService.isAccountKey(keyCode)) {
-            if (event.getAction() == KeyEvent.ACTION_UP) {
+            if (action == KeyEvent.ACTION_DOWN) {
                 showProfileSelectionDialog();
             }
             return true;
         }
         if (isDockMovingMode && keyCode == KeyEvent.KEYCODE_BACK) {
-            if (event.getAction() == KeyEvent.ACTION_UP) {
+            if (action == KeyEvent.ACTION_UP) {
                 stopDockMoveMode();
             }
             return true;
         }
         if (keyCode == KeyEvent.KEYCODE_MENU) {
-            if (event.getAction() == KeyEvent.ACTION_UP) {
+            if (action == KeyEvent.ACTION_UP) {
                 View focused = getCurrentFocus();
                 if (handleMenuKeyOnView(focused)) {
                     return true;
@@ -3033,7 +3286,7 @@ public class MainActivity extends Activity {
             return true;
         }
         if (HomeButtonAccessibilityService.isSettingsKey(keyCode)) {
-            if (event.getAction() == KeyEvent.ACTION_UP) {
+            if (action == KeyEvent.ACTION_DOWN) {
                 openOriginalTvSettings();
             }
             return true;

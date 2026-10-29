@@ -34,7 +34,7 @@
 - **Multi-Device Local Sync**: Automatic UDP peer discovery and state synchronization between TVs on the same local network (`ProfileSyncManager`).
 - **Dynamic Themes & 4K Wallpaper Slideshows**:
   - **Dynamic Abstract**: Procedural OpenGL / Canvas undulating ambient wave mesh with multiple colorways (Cosmic Violet, Midnight Cyan, Cyberpunk Neon, Aurora, Solar Flare, Emerald, and Deep Obsidian).
-  - **Nature (4K)**: 52 ultra-high-resolution curated landscapes (Yosemite, Banff Moraine Lake, Matterhorn, Lofoten Aurora, Grand Canyon, Dolomites, etc.) (Yosemite, Banff Moraine Lake, Matterhorn, Lofoten Aurora, Grand Canyon, Dolomites, etc.).
+  - **Nature (4K)**: 51 ultra-high-resolution curated landscapes (Yosemite, Banff Moraine Lake, Matterhorn, Lofoten Aurora, Grand Canyon, Dolomites, etc.) (Yosemite, Banff Moraine Lake, Matterhorn, Lofoten Aurora, Grand Canyon, Dolomites, etc.).
   - **Space (4K)**: 25 ultra-high-resolution NASA / Webb / Hubble astrophotography images (Carina Nebula, Pillars of Creation, Jupiter Great Red Spot, Saturn Rings, Andromeda, etc.) (Carina Nebula, Pillars of Creation, Jupiter Great Red Spot, Saturn Rings, Andromeda, etc.).
   - **Cities (4K)**: 30 ultra-high-resolution global skylines (Tokyo, Manhattan, Singapore, Dubai, Paris, London, Chicago, etc.) (Tokyo, Manhattan, Singapore, Dubai, Paris, London, Chicago, etc.).
   - **Smooth Slideshow Transitions**: Configurable rotation interval (1 min, 5 min default, 15 min, 30 min, 1 hour, or fixed) with silky 2.2-second crossfade transitions, subtle Ken Burns pan/zoom drift, and protective readability gradient overlays.
@@ -56,20 +56,20 @@ Nexus TV Launcher transforms ordinary smart televisions into clean, responsive, 
 
 ---
 
-### Modern 4K Photo Themes
+### Dynamic Ambient & 4K Photo Themes
 
-Nexus TV Launcher features 107 pristine 4K wallpapers curated specifically for large-screen OLED and LED displays with randomized non-repeating slideshows and configurable crossfade intervals:
+Nexus TV Launcher features procedurally rendered ambient waves and 106 pristine 4K wallpapers curated specifically for large-screen OLED and LED displays with randomized non-repeating slideshows and configurable crossfade intervals:
 
 <p align="center">
-  <img src="assets/screenshots/01-home-nature-4k.png" alt="Nature Theme (4K)" width="880" />
+  <img src="assets/screenshots/01-home-abstract-waves.png" alt="Dynamic Abstract Wave Theme" width="880" />
   <br />
-  <em>Nature Landscapes (4K): Mountain vistas, serene lakes, alpine forests, and botanical photography.</em>
+  <em>Dynamic Abstract: Procedural fluid wave mesh in Cosmic Violet, Cyberpunk, Aurora, and Obsidian colorways.</em>
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/02-home-cities-4k.png" alt="Cities Theme (4K)" width="880" />
+  <img src="assets/screenshots/02-home-nature-4k.png" alt="Nature Theme (4K)" width="880" />
   <br />
-  <em>World City Skylines (4K): Twilight architecture across London, Tokyo, Singapore, Dubai, and Manhattan.</em>
+  <em>Nature Landscapes (4K): Mountain vistas, alpine lakes, serene forests, and dramatic coastal landscapes.</em>
 </p>
 
 <p align="center">
@@ -79,9 +79,9 @@ Nexus TV Launcher features 107 pristine 4K wallpapers curated specifically for l
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/04-home-abstract-waves.png" alt="Dynamic Abstract Wave Theme" width="880" />
+  <img src="assets/screenshots/04-home-cities-4k.png" alt="Cities Theme (4K)" width="880" />
   <br />
-  <em>Dynamic Abstract: Procedural fluid wave mesh in Cosmic Violet, Cyberpunk, Aurora, and Obsidian colorways.</em>
+  <em>World City Skylines (4K): Twilight architecture across London, Tokyo, Singapore, Dubai, and Manhattan.</em>
 </p>
 
 ---

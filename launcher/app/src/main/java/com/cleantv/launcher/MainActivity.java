@@ -271,6 +271,26 @@ public class MainActivity extends Activity {
     private static volatile boolean sHasWindowFocus = false;
 
     private final List<android.app.Dialog> activeDialogs = new ArrayList<>();
+    private final Map<String, ImageView> profileDialogAvatarViews = new HashMap<>();
+
+    private void refreshProfileDialogAvatar(String profile) {
+        if (profile == null) return;
+        ImageView iv = null;
+        for (Map.Entry<String, ImageView> entry : profileDialogAvatarViews.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(profile.trim())) {
+                iv = entry.getValue();
+                break;
+            }
+        }
+        if (iv != null) {
+            String iconId = WatchNextManager.getProfileIcon(this, profile);
+            String themeId = WatchNextManager.getProfileAvatar(this, profile);
+            float density = getResources().getDisplayMetrics().density;
+            int avatarPx = (int) (48 * density);
+            iv.setImageDrawable(WatchNextManager.createProfileAvatarDrawable(
+                    this, profile, iconId, themeId, avatarPx, outfitTypeface));
+        }
+    }
 
     private final Runnable snapshotCaptureRunnable = this::captureHomeSnapshot;
 
@@ -852,6 +872,25 @@ public class MainActivity extends Activity {
 
             }
 
+        }
+
+        if (intent != null && intent.hasExtra("theme_category")) {
+            String catName = intent.getStringExtra("theme_category");
+            if (animatedBackground != null && catName != null) {
+                animatedBackground.setCategoryByName(catName);
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                        .edit().putString(KEY_THEME_CATEGORY, animatedBackground.getCategory().name()).apply();
+            }
+        }
+
+        if (intent != null && intent.getBooleanExtra("next_wallpaper", false)) {
+            if (animatedBackground != null) {
+                animatedBackground.nextWallpaper();
+            }
+        }
+
+        if (intent != null && intent.getBooleanExtra("EXTRA_OPEN_THEMES_MENU", false)) {
+            getWindow().getDecorView().post(this::showThemeDialog);
         }
 
         if (intent != null && intent.getBooleanExtra("EXTRA_OPEN_USER_MENU", false)) {
@@ -4230,6 +4269,7 @@ public class MainActivity extends Activity {
 
 
         View focusedFirst = null;
+        profileDialogAvatarViews.clear();
 
 
 
@@ -4279,11 +4319,9 @@ public class MainActivity extends Activity {
 
             android.graphics.drawable.GradientDrawable focusedBg = new android.graphics.drawable.GradientDrawable();
 
-            focusedBg.setColor(0xFFFFFFFF);
-
+            focusedBg.setColor(isActive ? 0xFF1C2C38 : 0xFF222634);
             focusedBg.setCornerRadius(16f * density);
-
-            focusedBg.setStroke((int) (2.5f * density), 0xFFFFFFFF);
+            focusedBg.setStroke((int) (2.5f * density), 0xFF00E5FF);
 
 
 
@@ -4316,8 +4354,7 @@ public class MainActivity extends Activity {
                     this, profileName, iconId, themeId, avatarPx, outfitTypeface));
 
             tile.addView(ivAvatar);
-
-
+            profileDialogAvatarViews.put(profileName, ivAvatar);
 
             // Text Info
 
@@ -4373,7 +4410,7 @@ public class MainActivity extends Activity {
 
                 badge.setTextSize(11f);
 
-                badge.setTextColor(0xFF00E5FF);
+                badge.setTextColor(0xFF001420);
 
                 int bH = (int) (10 * density);
 
@@ -4383,7 +4420,7 @@ public class MainActivity extends Activity {
 
                 android.graphics.drawable.GradientDrawable bBg = new android.graphics.drawable.GradientDrawable();
 
-                bBg.setColor(0x3300E5FF);
+                bBg.setColor(0xFF00E5FF);
 
                 bBg.setCornerRadius(10f * density);
 
@@ -4409,9 +4446,9 @@ public class MainActivity extends Activity {
 
                     tile.setBackground(focusedBg);
 
-                    tvName.setTextColor(0xFF0A0A0E);
+                    tvName.setTextColor(Color.WHITE);
 
-                    tvStatus.setTextColor(0xFF383842);
+                    tvStatus.setTextColor(isActive ? 0xFF00E5FF : 0xFFCFD3DC);
 
                     tile.setTranslationZ(4f * density);
 
@@ -4440,23 +4477,16 @@ public class MainActivity extends Activity {
 
 
             tile.setOnClickListener(v -> {
-
-                dialog.dismiss();
-
                 if (!isActive) {
-
+                    dialog.dismiss();
                     WatchNextManager.setCurrentProfile(MainActivity.this, profileName);
-
                     updateProfilePill();
-
                     activeWatchFilterKey = "ALL";
-
                     populateContinueWatchingShelf();
-
                     Toast.makeText(MainActivity.this, "Switched profile to " + profileName, Toast.LENGTH_SHORT).show();
-
+                } else {
+                    showAvatarSelectionDialog(profileName);
                 }
-
             });
 
 
@@ -4494,13 +4524,8 @@ public class MainActivity extends Activity {
         // Customize Profile Option
 
         View btnCustomize = createDialogTile("Customize Profile Avatar",
-
                 "Choose character art, colors, or initials for " + current, () -> {
-
-            dialog.dismiss();
-
             showAvatarSelectionDialog(current);
-
         });
 
         list.addView(btnCustomize);
@@ -4911,9 +4936,9 @@ public class MainActivity extends Activity {
 
                     if (hasFocus) {
 
-                        bg.setColor(0x45FFFFFF);
+                        bg.setColor(isSelected ? 0x4800E5FF : 0x2400E5FF);
 
-                        bg.setStroke((int) (3f * density), 0xFFFFFFFF);
+                        bg.setStroke((int) (2.8f * density), 0xFF00E5FF);
 
                         ivChar.setScaleX(1.0f);
 
@@ -4974,8 +4999,8 @@ public class MainActivity extends Activity {
                     selectedIcon[0] = character.id;
 
                     WatchNextManager.setProfileIcon(MainActivity.this, profile, selectedIcon[0]);
-
                     updateProfilePill();
+                    refreshProfileDialogAvatar(profile);
 
                     Toast.makeText(MainActivity.this, profile + "'s avatar updated to " + character.label, Toast.LENGTH_SHORT).show();
 
@@ -5199,6 +5224,9 @@ public class MainActivity extends Activity {
 
                             return true; // Stay on last item
 
+                        } else if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+                            tile.performClick();
+                            return true;
                         }
 
                     }
@@ -5222,10 +5250,9 @@ public class MainActivity extends Activity {
 
 
         builder.setPositiveButton("Save Avatar", (d, w) -> {
-
             WatchNextManager.setProfileIcon(this, profile, selectedIcon[0]);
-
             updateProfilePill();
+            refreshProfileDialogAvatar(profile);
 
             Toast.makeText(this, profile + "'s avatar updated", Toast.LENGTH_SHORT).show();
 
@@ -7054,11 +7081,11 @@ public class MainActivity extends Activity {
 
         android.graphics.drawable.GradientDrawable focusedBg = new android.graphics.drawable.GradientDrawable();
 
-        focusedBg.setColor(0xFFFFFFFF);
+        focusedBg.setColor(0xFF1C2C38);
 
         focusedBg.setCornerRadius(14f * density);
 
-        focusedBg.setStroke((int) (2 * density), 0xFFFFFFFF);
+        focusedBg.setStroke((int) (2.5f * density), 0xFF00E5FF);
 
 
 
@@ -7102,9 +7129,9 @@ public class MainActivity extends Activity {
 
                 tile.setBackground(focusedBg);
 
-                tvTitle.setTextColor(0xFF0A0A0E);
+                tvTitle.setTextColor(Color.WHITE);
 
-                tvSub.setTextColor(0xFF383842);
+                tvSub.setTextColor(0xFFDDFBFF);
 
                 tile.setTranslationZ(4f * density);
 

@@ -126,7 +126,7 @@ import java.util.concurrent.Executors;
 public class AnimatedWaveBackgroundView extends View {
 
     private static final String[] NATURE_WALLPAPERS = {
-        "wallpapers/nature/nature_01.jpg", "wallpapers/nature/nature_02.jpg", "wallpapers/nature/nature_03.jpg",
+        "wallpapers/nature/nature_02.jpg", "wallpapers/nature/nature_03.jpg",
         "wallpapers/nature/nature_04.jpg", "wallpapers/nature/nature_05.jpg", "wallpapers/nature/nature_06.jpg",
         "wallpapers/nature/nature_07.jpg", "wallpapers/nature/nature_08.jpg", "wallpapers/nature/nature_09.jpg",
         "wallpapers/nature/nature_10.jpg", "wallpapers/nature/nature_11.jpg", "wallpapers/nature/nature_12.jpg",

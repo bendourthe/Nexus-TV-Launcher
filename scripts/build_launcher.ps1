@@ -1,21 +1,25 @@
 $ErrorActionPreference = "Stop"
 
-$baseDir = "C:\Users\bdour\.gemini\antigravity-ide\scratch\android-tv-clean-launcher"
-$jdk = "$baseDir\tools\jdk-17.0.12+7"
-$sdk = "$baseDir\tools\sdk"
+$scriptDir = $PSScriptRoot
+if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
+$repoRoot = Split-Path -Parent $scriptDir
+
+$toolsDir = "C:\Users\bdour\.gemini\antigravity-ide\scratch\android-tv-clean-launcher\tools"
+$jdk = "$toolsDir\jdk-17.0.12+7"
+$sdk = "$toolsDir\sdk"
 $buildTools = "$sdk\build-tools\30.0.3"
 $androidJar = "$sdk\platforms\android-30\android.jar"
 
 $env:JAVA_HOME = $jdk
 $env:PATH = "$jdk\bin;$env:PATH"
 
-$appDir = "$baseDir\launcher\app"
+$appDir = "$repoRoot\launcher\app"
 $srcDir = "$appDir\src\main"
 $resDir = "$srcDir\res"
 $manifest = "$srcDir\AndroidManifest.xml"
 $assetsDir = "$srcDir\assets"
 
-$outDir = "$baseDir\launcher\build"
+$outDir = "$repoRoot\launcher\build"
 $compiledZip = "$outDir\compiled_res.zip"
 $genDir = "$outDir\gen"
 $classesDir = "$outDir\classes"
@@ -81,11 +85,19 @@ Remove-Item $alignedApk -ErrorAction SilentlyContinue
 & "$buildTools\zipalign.exe" -v -p 4 "$outDir\app-unaligned.apk" "$alignedApk"
 if ($LASTEXITCODE -ne 0) { throw "zipalign failed with exit code $LASTEXITCODE" }
 
-Write-Output "8. Generating debug keystore if needed..."
+Write-Output "8. Resolving master debug keystore..."
+$masterKey = "$repoRoot\launcher\debug.keystore"
+$scratchKey = "C:\Users\bdour\.gemini\antigravity-ide\scratch\android-tv-clean-launcher\launcher\build\debug.keystore"
 $debugKey = "$outDir\debug.keystore"
+if (Test-Path $masterKey) {
+    Copy-Item $masterKey $debugKey -Force
+} elseif (Test-Path $scratchKey) {
+    Copy-Item $scratchKey $debugKey -Force
+}
 if (-not (Test-Path $debugKey)) {
     & "$jdk\bin\keytool.exe" -genkey -v -keystore "$debugKey" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
     if ($LASTEXITCODE -ne 0) { throw "keytool failed with exit code $LASTEXITCODE" }
+    Copy-Item $debugKey $masterKey -Force
 }
 
 Write-Output "9. Signing APK with apksigner..."
@@ -96,3 +108,4 @@ Copy-Item "$alignedApk" "$finalApk"
 if ($LASTEXITCODE -ne 0) { throw "apksigner failed with exit code $LASTEXITCODE" }
 
 Write-Output "BUILD SUCCESSFUL! Final APK: $finalApk ($( (Get-Item $finalApk).Length ) bytes)"
+Copy-Item $finalApk "C:\Users\bdour\.gemini\antigravity-ide\scratch\android-tv-clean-launcher\launcher\build\clean-launcher-release.apk" -Force -ErrorAction SilentlyContinue

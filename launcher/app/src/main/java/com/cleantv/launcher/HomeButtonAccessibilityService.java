@@ -2564,18 +2564,32 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
 
 
 
-        public void launchSettings() {
+        private static long sLastSvcSettingsLaunch = 0;
+
+    public void launchSettings() {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now - sLastSvcSettingsLaunch < 1000) {
+            return;
+        }
+        sLastSvcSettingsLaunch = now;
+
         onExternalAppLaunching();
         if (MainActivity.isMainActivityFocused()) {
             MainActivity.requestOpenSettingsFromService();
             return;
         }
         if (!isFireTvDevice()) {
-            // Android TV / Google TV / Hisense: direct explicit MainSettings
+            try {
+                Intent intent = new Intent(android.provider.Settings.ACTION_SETTINGS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                return;
+            } catch (Throwable ignored) {
+            }
             try {
                 Intent intent = new Intent();
                 intent.setComponent(new android.content.ComponentName("com.android.tv.settings", "com.android.tv.settings.MainSettings"));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
                 return;
             } catch (Throwable ignored) {

@@ -389,21 +389,19 @@ public class MainActivity extends Activity {
         activeDialogs.add(dialog);
 
         dialog.setOnKeyListener((d, keyCode, event) -> {
-
-            if (keyCode == KeyEvent.KEYCODE_HOME) {
-
-                if (event.getAction() == KeyEvent.ACTION_DOWN) {
-
-                    dismissAllDialogsAndResetToHome();
-
+            if (keyCode == KeyEvent.KEYCODE_BACK) {
+                if (event.getAction() == KeyEvent.ACTION_UP) {
+                    dialog.dismiss();
                 }
-
                 return true;
-
             }
-
+            if (keyCode == KeyEvent.KEYCODE_HOME) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                    dismissAllDialogsAndResetToHome();
+                }
+                return true;
+            }
             return false;
-
         });
 
         dialog.setOnDismissListener(d -> {
@@ -3253,31 +3251,32 @@ public class MainActivity extends Activity {
 
 
     private void applyFilterPillStyle(TextView pill, boolean highlighted, int brandColor) {
-
         final float density = getResources().getDisplayMetrics().density;
-
         android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
-
         gd.setCornerRadius(15f * density);
-
         if (highlighted) {
-
-            gd.setColor(brandColor != 0 ? brandColor : Color.parseColor("#00E5FF"));
-
+            // Darker, rich slate-cyan fill with crisp cyan border for high-contrast, effortless readability
+            int darkFill = (brandColor != 0) ? darkenColor(brandColor, 0.42f) : Color.parseColor("#0C3642");
+            int strokeColor = (brandColor != 0) ? brandColor : Color.parseColor("#00E5FF");
+            gd.setColor(darkFill);
+            gd.setStroke((int) (1.5f * density), strokeColor);
             pill.setTextColor(Color.WHITE);
-
+            if (outfitTypeface != null) pill.setTypeface(outfitTypeface, Typeface.BOLD);
         } else {
-
             gd.setColor(Color.parseColor("#1C1C28"));
-
             gd.setStroke((int) (1 * density), Color.parseColor("#35FFFFFF"));
-
             pill.setTextColor(Color.parseColor("#C8C8DC"));
-
+            if (outfitTypeface != null) pill.setTypeface(outfitTypeface, Typeface.NORMAL);
         }
-
         pill.setBackground(gd);
+    }
 
+    private static int darkenColor(int color, float factor) {
+        int a = Color.alpha(color);
+        int r = Math.round(Color.red(color) * factor);
+        int g = Math.round(Color.green(color) * factor);
+        int b = Math.round(Color.blue(color) * factor);
+        return Color.argb(a, Math.min(r, 255), Math.min(g, 255), Math.min(b, 255));
     }
 
 
@@ -5461,89 +5460,49 @@ public class MainActivity extends Activity {
 
 
     private LinearLayout createSubActionButton(String label, Runnable action, float density) {
-
         LinearLayout btn = new LinearLayout(this);
-
         btn.setOrientation(LinearLayout.HORIZONTAL);
-
         btn.setGravity(android.view.Gravity.CENTER);
-
         btn.setFocusable(true);
-
         btn.setClickable(true);
-
-        int vPad = (int) (10 * density);
-
-        int hPad = (int) (14 * density);
-
+        int vPad = (int) (12 * density);
+        int hPad = (int) (20 * density);
         btn.setPadding(hPad, vPad, hPad, vPad);
-
-
+        btn.setMinimumHeight((int) (46 * density));
 
         TextView tv = new TextView(this);
-
         tv.setText(label);
-
         tv.setTextColor(Color.WHITE);
-
         tv.setTextSize(13f);
-
         if (outfitTypeface != null) tv.setTypeface(outfitTypeface, Typeface.BOLD);
-
         btn.addView(tv);
 
-
-
-        GradientDrawable defBg = new GradientDrawable();
-
-        defBg.setColor(0x22FFFFFF);
-
-        defBg.setCornerRadius(10 * density);
-
-        defBg.setStroke((int) (1f * density), 0x33FFFFFF);
-
-        btn.setBackground(defBg);
-
-
-
-        btn.setOnFocusChangeListener((v, hasFocus) -> {
-
+        Runnable updateBtn = () -> {
+            boolean hasFocus = btn.hasFocus();
+            GradientDrawable b = new GradientDrawable();
+            b.setCornerRadius(22 * density); // Sleek modern pill shape
             if (hasFocus) {
-
-                btn.setBackgroundColor(0xFFFFFFFF);
-
-                tv.setTextColor(0xFF090A10);
-
+                b.setColor(0x4400E5FF); // Glowing cyan frosted glass
+                b.setStroke((int) (2.5f * density), 0xFF00E5FF); // Vibrant 2.5dp cyan outline
+                tv.setTextColor(0xFFFFFFFF);
+                btn.setTranslationZ(4 * density);
             } else {
-
-                GradientDrawable b = new GradientDrawable();
-
-                b.setColor(0x22FFFFFF);
-
-                b.setCornerRadius(10 * density);
-
-                b.setStroke((int) (1f * density), 0x33FFFFFF);
-
-                btn.setBackground(b);
-
-                tv.setTextColor(Color.WHITE);
-
+                b.setColor(0x22FFFFFF); // Dark frosted glass pill
+                b.setStroke((int) (1.2f * density), 0x38FFFFFF);
+                tv.setTextColor(0xEEFFFFFF);
+                btn.setTranslationZ(0f);
             }
+            btn.setBackground(b);
+        };
 
-        });
-
-
+        btn.setOnFocusChangeListener((v, hasFocus) -> updateBtn.run());
+        updateBtn.run();
 
         btn.setOnClickListener(v -> {
-
             if (action != null) action.run();
-
         });
 
-
-
         return btn;
-
     }
 
 
@@ -5556,11 +5515,13 @@ public class MainActivity extends Activity {
         builder.setTitle("Wallpaper & Ambient Themes");
 
         ScrollView sv = new ScrollView(this);
-        sv.setClipChildren(true);
+        sv.setClipChildren(false);
         sv.setClipToPadding(false);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
+        root.setClipChildren(false);
+        root.setClipToPadding(false);
         int pad = (int) (18 * density);
         root.setPadding(pad, pad, pad, pad);
 
@@ -5578,7 +5539,6 @@ public class MainActivity extends Activity {
         final List<Runnable> cardUpdaters = new ArrayList<>();
         View[] initialFocusCard = new View[1];
 
-        // Container for category-dependent controls (Slideshow controls vs Abstract Palettes)
         final LinearLayout dynamicControlsContainer = new LinearLayout(this);
         dynamicControlsContainer.setOrientation(LinearLayout.VERTICAL);
 
@@ -5587,7 +5547,7 @@ public class MainActivity extends Activity {
             card.setOrientation(LinearLayout.VERTICAL);
             card.setFocusable(true);
             card.setClickable(true);
-            int cPad = (int) (12 * density);
+            int cPad = (int) (14 * density);
             card.setPadding(cPad, cPad, cPad, cPad);
             LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -5629,29 +5589,31 @@ public class MainActivity extends Activity {
                 tvBadge.setVisibility(isCur ? View.VISIBLE : View.GONE);
 
                 GradientDrawable bg = new GradientDrawable();
-                bg.setCornerRadius(12 * density);
+                bg.setCornerRadius(14 * density);
+
+                // Zero scaling so borders stay crisp, sharp, and never get clipped!
+                card.setScaleX(1.0f);
+                card.setScaleY(1.0f);
 
                 if (hasFocus) {
-                    // Unified cyan focus outline (moves cleanly across cards)
+                    // Moving blue/cyan outline with glow fill
                     bg.setColor(isCur ? 0x4800E5FF : 0x2400E5FF);
                     bg.setStroke((int) (2.8f * density), 0xFF00E5FF);
-                    card.setScaleX(1.015f);
-                    card.setScaleY(1.015f);
-                    card.setTranslationZ(6f * density);
+                    card.setTranslationZ(4f * density);
                     tvTitle.setTextColor(0xFFFFFFFF);
                     tvDesc.setTextColor(0xFFDDFBFF);
                     tvBadge.setTextColor(0xFF00E5FF);
                 } else {
-                    card.setScaleX(1.0f);
-                    card.setScaleY(1.0f);
                     card.setTranslationZ(0f);
                     if (isCur) {
-                        bg.setColor(0x2200E5FF);
-                        bg.setStroke((int) (1.4f * density), 0x7700E5FF);
+                        // Current active theme has subtle cyan border + cyan fill
+                        bg.setColor(0x2400E5FF);
+                        bg.setStroke((int) (1.5f * density), 0x7700E5FF);
                         tvTitle.setTextColor(Color.WHITE);
                         tvDesc.setTextColor(0xFF9E9EA8);
                         tvBadge.setTextColor(0xFF00E5FF);
                     } else {
+                        // Inactive cards
                         bg.setColor(0x14FFFFFF);
                         bg.setStroke((int) (1f * density), 0x22FFFFFF);
                         tvTitle.setTextColor(0xDDFFFFFF);
@@ -5675,7 +5637,6 @@ public class MainActivity extends Activity {
                         .edit().putString(KEY_THEME_CATEGORY, cat.name()).apply();
                 Toast.makeText(this, "Theme switched to " + cat.title, Toast.LENGTH_SHORT).show();
 
-                // Dynamic in-place update without closing the dialog or screen flashing!
                 for (Runnable u : cardUpdaters) {
                     u.run();
                 }
@@ -5764,13 +5725,16 @@ public class MainActivity extends Activity {
 
         sv.addView(root);
         builder.setView(sv);
-        builder.setNegativeButton("Done", null);
+        // Note: No generic bottom button bar so focus lands cleanly on currently active theme card
         AlertDialog dialog = showTrackedBuilder(builder);
 
-        // Crucial requirement: Set initial focus directly on currently selected theme card
+        // Guarantee focus lands on active theme card
         dialog.setOnShowListener(d -> {
             if (initialFocusCard[0] != null) {
-                initialFocusCard[0].requestFocus();
+                initialFocusCard[0].post(() -> {
+                    initialFocusCard[0].requestFocus();
+                    initialFocusCard[0].requestFocusFromTouch();
+                });
             }
         });
     }
@@ -5797,7 +5761,7 @@ public class MainActivity extends Activity {
             pLp.bottomMargin = (int) (10 * density);
             photoNavRow.setLayoutParams(pLp);
 
-            LinearLayout btnPrev = createSubActionButton("Previous 4K Image", () -> {
+            LinearLayout btnPrev = createSubActionButton("◀   Previous 4K Image", () -> {
                 animatedBackground.previousWallpaper();
                 Toast.makeText(this, "Showing previous 4K wallpaper", Toast.LENGTH_SHORT).show();
             }, density);
@@ -5807,7 +5771,7 @@ public class MainActivity extends Activity {
             btnPrev.setLayoutParams(btnPrevLp);
             photoNavRow.addView(btnPrev);
 
-            LinearLayout btnNext = createSubActionButton("Next 4K Image", () -> {
+            LinearLayout btnNext = createSubActionButton("Next 4K Image   ▶", () -> {
                 animatedBackground.nextWallpaper();
                 Toast.makeText(this, "Showing next 4K wallpaper", Toast.LENGTH_SHORT).show();
             }, density);
@@ -6231,115 +6195,69 @@ public class MainActivity extends Activity {
     @Override
 
     public boolean dispatchKeyEvent(KeyEvent event) {
-
         int keyCode = event.getKeyCode();
-
         int action = event.getAction();
-
         Log.i("RemoteKey", "dispatchKeyEvent: keyCode=" + keyCode + " (" + KeyEvent.keyCodeToString(keyCode) + ") action=" + action);
 
-
-
         if (keyCode == KeyEvent.KEYCODE_HOME) {
-
             if (action == KeyEvent.ACTION_DOWN) {
-
                 dismissAllDialogsAndResetToHome();
-
             }
-
             return true;
+        }
 
+        // Direct, infallible Remote BACK button handling
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (action == KeyEvent.ACTION_UP) {
+                onBackPressed();
+            }
+            return true;
         }
 
         if (action == KeyEvent.ACTION_DOWN) {
-
             HomeButtonAccessibilityService.onUserInteractedWithMainActivity();
-
         }
 
         if (HomeButtonAccessibilityService.isAppShortcutKey(keyCode)) {
-
             if (action == KeyEvent.ACTION_DOWN) {
-
                 HomeButtonAccessibilityService.handleAppShortcutKeyIfMatched(this, keyCode);
-
             }
-
             return true;
-
-        }
-
-        if (HomeButtonAccessibilityService.isInputKey(keyCode)) {
-
-            if (action == KeyEvent.ACTION_DOWN) {
-
-                showInputsDialog();
-
-            }
-
-            return true;
-
         }
 
         if (HomeButtonAccessibilityService.isAccountKey(keyCode)) {
-
             if (action == KeyEvent.ACTION_DOWN) {
-
                 showProfileSelectionDialog();
-
             }
-
             return true;
-
         }
 
-        if (isDockMovingMode && keyCode == KeyEvent.KEYCODE_BACK) {
-
-            if (action == KeyEvent.ACTION_UP) {
-
-                stopDockMoveMode();
-
+        if (HomeButtonAccessibilityService.isInputKey(keyCode)) {
+            if (action == KeyEvent.ACTION_DOWN) {
+                showInputsDialog();
             }
-
             return true;
-
         }
 
         if (keyCode == KeyEvent.KEYCODE_MENU) {
-
             if (action == KeyEvent.ACTION_UP) {
-
                 View focused = getCurrentFocus();
-
                 if (handleMenuKeyOnView(focused)) {
-
                     return true;
-
                 }
-
                 openOriginalTvSettings();
-
             }
-
             return true;
-
         }
 
         if (HomeButtonAccessibilityService.isSettingsKey(keyCode)) {
-
             if (action == KeyEvent.ACTION_DOWN) {
-
                 openOriginalTvSettings();
-
             }
-
             return true;
-
         }
 
         return super.dispatchKeyEvent(event);
-
     }
 
 
@@ -6452,13 +6370,7 @@ public class MainActivity extends Activity {
 
         }
 
-        if (HomeButtonAccessibilityService.isSettingsKey(keyCode)) {
-
-            openSettings();
-
-            return true;
-
-        }
+        // isSettingsKey handled cleanly with debounce in dispatchKeyEvent
 
         return super.onKeyDown(keyCode, event);
 
@@ -6799,38 +6711,40 @@ public class MainActivity extends Activity {
         // Never call finish() on Home launcher
     }
 
+    private static long sLastSettingsLaunchTime = 0;
+
+    public static void requestHandleBackFromService() {
+        MainActivity inst = sInstance;
+        if (inst != null) {
+            inst.runOnUiThread(inst::onBackPressed);
+        }
+    }
+
     private void openOriginalTvSettings() {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now - sLastSettingsLaunchTime < 1000) {
+            Log.i("CleanTV", "Debouncing duplicate settings button press");
+            return;
+        }
+        sLastSettingsLaunchTime = now;
+
         HomeButtonAccessibilityService.onExternalAppLaunching();
         dismissAllDialogsAndResetToHome();
+
         if (!HomeButtonAccessibilityService.isFireTvDevice()) {
-            // Android TV / Google TV / Hisense: explicit MainSettings first
+            // Android TV / Google TV / Hisense: Standard ACTION_SETTINGS
+            try {
+                Intent intent = new Intent(android.provider.Settings.ACTION_SETTINGS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                return;
+            } catch (Throwable t) {
+                Log.w("CleanTV", "ACTION_SETTINGS failed, fallback to explicit component", t);
+            }
             try {
                 Intent intent = new Intent();
                 intent.setComponent(new ComponentName("com.android.tv.settings", "com.android.tv.settings.MainSettings"));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                startActivity(intent);
-                return;
-            } catch (Throwable ignored) {
-            }
-            try {
-                Intent intent = new Intent();
-                intent.setComponent(new ComponentName("com.android.tv.settings", "com.android.tv.settings.system.QuickSettingsActivity"));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                startActivity(intent);
-                return;
-            } catch (Throwable ignored) {
-            }
-            try {
-                Intent intent = new Intent();
-                intent.setComponent(new ComponentName("com.google.android.apps.tv.launcherx", "com.google.android.apps.tv.launcherx.settings.SettingsActivity"));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                startActivity(intent);
-                return;
-            } catch (Throwable ignored) {
-            }
-            try {
-                Intent intent = new Intent(Settings.ACTION_SETTINGS);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
                 return;
             } catch (Throwable ignored) {

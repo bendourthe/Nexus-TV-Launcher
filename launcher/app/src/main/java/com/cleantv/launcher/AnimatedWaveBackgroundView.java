@@ -676,11 +676,11 @@ public class AnimatedWaveBackgroundView extends View {
 
 
 
-    private final Paint photoPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final Paint photoPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
 
 
 
-    private final Paint prevPhotoPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final Paint prevPhotoPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
 
 
 
@@ -1453,47 +1453,10 @@ public class AnimatedWaveBackgroundView extends View {
 
 
 
-                int targetW = Math.max(getWidth(), 1920);
-
-
-
-                int targetH = Math.max(getHeight(), 1080);
-
-
-
-
-
-
-
-                int sample = 1;
-
-
-
-                while ((boundsOpts.outWidth / (sample * 2)) >= targetW && (boundsOpts.outHeight / (sample * 2)) >= targetH) {
-
-
-
-                    sample *= 2;
-
-
-
-                }
-
-
-
-
-
-
-
+                // Force native 4K resolution (inSampleSize = 1) and full 32-bit ARGB_8888 color depth (zero banding)
                 BitmapFactory.Options decodeOpts = new BitmapFactory.Options();
-
-
-
-                decodeOpts.inSampleSize = sample;
-
-
-
-                decodeOpts.inPreferredConfig = Bitmap.Config.RGB_565;
+                decodeOpts.inSampleSize = 1;
+                decodeOpts.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
 
 

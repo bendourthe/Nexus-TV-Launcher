@@ -15,17 +15,18 @@ LAUNCH_CMD="/system/bin/cmd activity start --activity-no-animation -a android.in
 LAST_CS=0
 LAST_WAKE_CS=0
 
+is_awake() {
+    dumpsys power 2>/dev/null | grep -q "mWakefulness=Awake"
+}
+
 while [ "$(cat "$PIDFILE" 2>/dev/null)" = "$$" ]; do
     logcat -T 1 -v brief *:I | while read -r line; do
         [ "$(cat "$PIDFILE" 2>/dev/null)" = "$$" ] || exit 0
         case "$line" in
             *"USER_SCREEN_OFF"*)
-                (
-                    usleep 620000 2>/dev/null || sleep 1
-                    $LAUNCH_CMD >/dev/null 2>&1
-                    usleep 260000 2>/dev/null || sleep 1
-                    $LAUNCH_CMD >/dev/null 2>&1
-                ) &
+                # Absolutely never launch activities when screen is off
+                LAST_CS=0
+                LAST_WAKE_CS=0
                 ;;
             *"USER_SCREEN_ON"*|*"SCREEN_ON intent received"*)
                 read up _ < /proc/uptime
@@ -34,15 +35,13 @@ while [ "$(cat "$PIDFILE" 2>/dev/null)" = "$$" ]; do
                 if [ "$diff_wake" -ge 80 ] || [ "$diff_wake" -lt 0 ]; then
                     LAST_WAKE_CS="$now_cs"
                     (
-                        $LAUNCH_CMD >/dev/null 2>&1
-                        usleep 110000 2>/dev/null || sleep 0.1
-                        $LAUNCH_CMD >/dev/null 2>&1
-                        usleep 160000 2>/dev/null || sleep 0.2
-                        $LAUNCH_CMD >/dev/null 2>&1
-                        usleep 220000 2>/dev/null || sleep 0.2
-                        $LAUNCH_CMD >/dev/null 2>&1
-                        usleep 300000 2>/dev/null || sleep 0.3
-                        $LAUNCH_CMD >/dev/null 2>&1
+                        if is_awake; then
+                            $LAUNCH_CMD >/dev/null 2>&1
+                            usleep 150000 2>/dev/null || sleep 0.2
+                            if is_awake; then
+                                $LAUNCH_CMD >/dev/null 2>&1
+                            fi
+                        fi
                     ) &
                 fi
                 ;;
@@ -53,13 +52,13 @@ while [ "$(cat "$PIDFILE" 2>/dev/null)" = "$$" ]; do
                 if [ "$diff_cs" -ge 45 ] || [ "$diff_cs" -lt 0 ]; then
                     LAST_CS="$now_cs"
                     (
-                        $LAUNCH_CMD >/dev/null 2>&1
-                        usleep 65000 2>/dev/null || sleep 0.1
-                        $LAUNCH_CMD >/dev/null 2>&1
-                        usleep 85000 2>/dev/null || sleep 0.1
-                        $LAUNCH_CMD >/dev/null 2>&1
-                        usleep 130000 2>/dev/null || sleep 0.1
-                        $LAUNCH_CMD >/dev/null 2>&1
+                        if is_awake; then
+                            $LAUNCH_CMD >/dev/null 2>&1
+                            usleep 80000 2>/dev/null || sleep 0.1
+                            if is_awake; then
+                                $LAUNCH_CMD >/dev/null 2>&1
+                            fi
+                        fi
                     ) &
                 fi
                 ;;

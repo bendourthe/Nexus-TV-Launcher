@@ -303,3 +303,21 @@
 - [x] Fire TV Live Issue Verification:
   - Issue 1 (Continue Watching direct details navigation): Clicked `Peacemaker` on Continue Watching row on Fire TV. Verified live screenshot confirms Max opens directly to the Peacemaker show details and episode list page (`S2 E8 Full Nelson`), without opening the search tab or requiring typing.
   - Issue 2 (Instant Home button return): Sent remote `KEYCODE_HOME` (3) while inside streaming app. Verified live screenshot within 600ms confirms Clean TV Launcher is immediately foreground with no black "Clean TV" screen and no stock launcher flash.
+
+### Phase 25 - 4K Wallpaper Themes, Unified Dark Slate Selection System, Instant Avatar Updates, and Privacy-Redacted README Visual Showcase
+
+- [x] Curated 4K Wallpapers (106 Images):
+  - Extracted and curated 4K 16:9 images for Nature (51), Space (25), and Cities (30).
+  - Deleted low-quality flower nature image (`nature_01.jpg`) and updated `AnimatedWaveBackgroundView.java` wallpaper arrays.
+  - Implemented smooth randomized non-repeating slideshow rotation with configurable intervals (1m, 5m, 15m, 30m, 1h, Fixed).
+- [x] Opaque Top Bar Navigation & Unified Focus Design:
+  - Eliminated pill transparency: replaced translucent backgrounds with opaque solid `#1A1C23` and border `#3D4152` in `glass_pill_bg.xml`.
+  - Eliminated bright white selection across all menus and dialogs: unified focused backgrounds to dark slate `#1C2C38` with glowing electric-cyan border `#00E5FF` in `glass_pill_focused.xml`, `weather_card_focused.xml`, `createDialogTile`, and `showProfileSelectionDialog`.
+  - Fixed active user badge contrast: implemented solid electric-cyan badge pill (`#00E5FF`) with dark bold typography (`#001420`).
+- [x] Instant In-Place User Menu Avatar Updates:
+  - Created `profileDialogAvatarViews` tracking map and `refreshProfileDialogAvatar(profile)`.
+  - Maintained User Menu open during avatar customization and added DPAD enter key handling so avatar updates render immediately on the dialog without close/reopen cycle.
+- [x] Privacy-Compliant Visual Showcase:
+  - Captured 7 uncompressed 1080p screenshots from live Hisense TV.
+  - Redacted all personal usernames (`Ben ▾` to `Profile ▾`, `Ben` to `Family`, `Jessica` to `Kids`).
+  - Reordered theme screenshots in `README.md` to start with Dynamic Abstract, followed by Nature, Space, and Cities, matching the in-app Theme selection menu.

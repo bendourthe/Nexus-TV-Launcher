@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cardRoot"
+    android:layout_width="250dp"
+    android:layout_height="146dp"
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp"
+    android:clickable="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:focusable="true">
+
+    <FrameLayout
+        android:id="@+id/cardContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Show/Movie Poster Artwork -->
+        <ImageView
+            android:id="@+id/ivPoster"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop" />
+
+        <!-- Dark Gradient Scrim -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/scrim_gradient" />
+
+        <!-- Top Pill Badges -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="10dp">
+
+            <TextView
+                android:id="@+id/tvAppBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/glass_pill_bg"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.04"
+                android:paddingStart="8dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="2dp"
+                android:text="MAX"
+                android:textColor="#FFFFFF"
+                android:textSize="9sp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tvNewEpisodeBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/glass_pill_bg"
+                android:fontFamily="sans-serif-bold"
+                android:letterSpacing="0.05"
+                android:paddingStart="7dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="2dp"
+                android:text="NEW EPISODE"
+                android:textColor="#00F0FF"
+                android:textSize="8sp" />
+        </LinearLayout>
+
+        <!-- Bottom Titles & Progress -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/tvShowTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"
+                android:singleLine="true"
+                android:text="Show Title"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tvEpisodeInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif"
+                android:singleLine="true"
+                android:text="S1 E1 • Pilot"
+                android:textColor="#B0B0C4"
+                android:textSize="11sp" />
+
+            <!-- Progress Bar -->
+            <FrameLayout
+                android:id="@+id/progressContainer"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_marginTop="5dp"
+                android:background="#35FFFFFF">
+
+                <View
+                    android:id="@+id/viewProgressFill"
+                    android:layout_width="100dp"
+                    android:layout_height="match_parent"
+                    android:background="#FF0055" />
+            </FrameLayout>
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- Elevated Focus Ring -->
+    <View
+        android:id="@+id/viewFocusRing"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/watch_next_focus_ring"
+        android:visibility="gone" />
+
+</FrameLayout>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tileRoot"
+    android:layout_width="116dp"
+    android:layout_height="66dp"
+    android:layout_marginStart="4dp"
+    android:layout_marginEnd="4dp"
+    android:background="@drawable/app_card_default_bg"
+    android:foreground="@drawable/app_card_focus_ring"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ImageView
+        android:id="@+id/ivBanner"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop" />
+
+    <TextView
+        android:id="@+id/tvLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#CC000000"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:padding="2dp"
+        android:textColor="@color/text_white"
+        android:textSize="10sp"
+        android:visibility="gone" />
+</FrameLayout>

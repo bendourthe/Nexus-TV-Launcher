@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Clean Launcher</string>
+    <string name="inputs_title">Inputs</string>
+    <string name="wifi_title">Wi-Fi</string>
+    <string name="settings_title">Settings</string>
+    <string name="customize_title">Customize</string>
+    <string name="theme_title">Theme</string>
+    <string name="all_apps_header">All Apps</string>
+    <string name="dialog_select_input">Select Video Input</string>
+    <string name="dialog_customize_dock">Customize Dock Apps</string>
+    <string name="dialog_select_theme">Wallpaper &amp; Abstract Theme</string>
+</resources>

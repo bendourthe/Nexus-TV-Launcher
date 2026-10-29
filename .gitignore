@@ -1,0 +1,30 @@
+# Build outputs and generated files
+launcher/build/
+*.apk
+*.dex
+*.class
+*.keystore
+
+# Local tooling and SDKs
+tools/
+
+# Temporary logs and runtime files
+*.log
+.system_generated/
+__pycache__/
+*.pyc
+*.odex
+*.vdex
+ui_*.xml
+vq_ui.xml
+
+# System and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Keep assets and tracked resources
+!assets/**
+!launcher/app/src/main/res/**

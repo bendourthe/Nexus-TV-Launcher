@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/pitch_black">
+
+    <!-- Hardware accelerated animated wave and drift background -->
+    <com.cleantv.launcher.AnimatedWaveBackgroundView
+        android:id="@+id/animatedBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Silky smooth physics scroll for dock and all-apps grid -->
+    <com.cleantv.launcher.TvScrollView
+        android:id="@+id/mainScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingStart="40dp"
+            android:paddingTop="32dp"
+            android:paddingEnd="40dp"
+            android:paddingBottom="180dp">
+
+            <!-- Top Header Bar -->
+            <LinearLayout
+                android:id="@+id/topBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- Left: Dashboard Twin Hero Widgets (Time & Weather) -->
+                <LinearLayout
+                    android:id="@+id/dashboardContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- Time & Date Hero Block -->
+                    <LinearLayout
+                        android:id="@+id/timeBlock"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvGreeting"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:letterSpacing="0.03"
+                            android:text="Good morning"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvClock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:includeFontPadding="false"
+                            android:text="8:05"
+                            android:textColor="@color/text_white"
+                            android:textSize="34sp" />
+
+                        <TextView
+                            android:id="@+id/tvDate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif"
+                            android:text="Tuesday, October 20"
+                            android:textColor="@color/text_subtle"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Elegant Frosted Glass Vertical Divider -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginEnd="20dp"
+                        android:background="#25FFFFFF" />
+
+                    <!-- Weather Hero Block: Modern typography matching the time widget -->
+                    <LinearLayout
+                        android:id="@+id/btnWeather"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_marginTop="6dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginBottom="6dp"
+                        android:background="@drawable/weather_card_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="start|center_vertical"
+                        android:orientation="vertical"
+                        android:paddingStart="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="6dp">
+
+                        <TextView
+                            android:id="@+id/tvWeatherLocation"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:letterSpacing="0.03"
+                            android:text="San Jose, CA ▾"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp" />
+
+                        <!-- Hero Temperature Row: Large F with secondary C and prominent weather icon -->
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/tvWeatherTempF"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-medium"
+                                android:includeFontPadding="false"
+                                android:text="51°F"
+                                android:textColor="@color/text_white"
+                                android:textSize="34sp" />
+
+                            <TextView
+                                android:id="@+id/tvWeatherTempC"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:fontFamily="sans-serif"
+                                android:includeFontPadding="false"
+                                android:text="/ 11°C"
+                                android:textColor="@color/text_subtle"
+                                android:textSize="15sp" />
+
+                            <ImageView
+                                android:id="@+id/ivWeatherIcon"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:layout_marginStart="14dp"
+                                android:contentDescription="Weather Condition"
+                                android:src="@drawable/ic_weather_partly_cloudy" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvWeatherCondition"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif"
+                            android:text="Overcast"
+                            android:textColor="@color/text_subtle"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Flexible spacer pushing pills to the far right -->
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <!-- Right: Glass Pill Buttons (Uncropped, streamlined 4-pill layout) -->
+                <LinearLayout
+                    android:id="@+id/pillContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnProfile"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/glass_pill_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
+                        android:text="Ben ▾"
+                        android:textColor="@color/glass_pill_text_selector"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/btnInputs"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/glass_pill_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
+                        android:text="Inputs ▾"
+                        android:textColor="@color/glass_pill_text_selector"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/btnBluetooth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/glass_pill_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
+                        android:text="Bluetooth"
+                        android:textColor="@color/glass_pill_text_selector"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/btnSettings"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/glass_pill_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
+                        android:text="Settings"
+                        android:textColor="@color/glass_pill_text_selector"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Focused Dock App Name with Ambient Glow Title -->
+            <TextView
+                android:id="@+id/tvFocusedAppName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="120dp"
+                android:gravity="center"
+                android:text="YouTube"
+                android:textColor="@color/text_white"
+                android:textSize="32sp" />
+
+            <!-- Apple TV Style Glass Dock Band -->
+            <LinearLayout
+                android:id="@+id/dockContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/dock_container_bg"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="8dp" />
+
+            <!-- Continue Watching Shelf with Filters on the Same Row -->
+            <LinearLayout
+                android:id="@+id/containerContinueWatching"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="44dp"
+                    android:layout_marginEnd="44dp"
+                    android:layout_marginBottom="8dp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvWatchNextHeader"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.04"
+                        android:text="Continue Watching"
+                        android:textColor="@color/text_white"
+                        android:textSize="17sp" />
+
+                    <!-- App Filter Pills on the SAME row alongside Continue Watching -->
+                    <HorizontalScrollView
+                        android:id="@+id/scrollWatchFilters"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="18dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/filterPillContainer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:clipChildren="false"
+                            android:clipToPadding="false"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal" />
+                    </HorizontalScrollView>
+                </LinearLayout>
+
+                <HorizontalScrollView
+                    android:id="@+id/scrollWatchNext"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:paddingStart="36dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="36dp"
+                    android:paddingBottom="14dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/shelfWatchNext"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
+            </LinearLayout>
+
+            <!-- All Apps Section (Android Phone Style App Drawer) -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvAllAppsHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginTop="56dp"
+                    android:layout_marginBottom="14dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.04"
+                    android:text="All Apps"
+                    android:textColor="@color/text_muted"
+                    android:textSize="17sp" />
+
+                <!-- 6-Column Android Phone Style App Drawer Grid -->
+                <GridLayout
+                    android:id="@+id/appGrid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alignmentMode="alignMargins"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:columnCount="6"
+                    android:orientation="horizontal" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </com.cleantv.launcher.TvScrollView>
+</FrameLayout>

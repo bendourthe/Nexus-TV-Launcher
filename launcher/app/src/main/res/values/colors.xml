@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="pitch_black">#000000</color>
+    <color name="glass_dock_bg">#1AFFFFFF</color>
+    <color name="glass_dock_border">#33FFFFFF</color>
+    <color name="glass_pill_bg">#26FFFFFF</color>
+    <color name="glass_pill_focused">#66FFFFFF</color>
+    <color name="text_white">#F5F5F7</color>
+    <color name="text_muted">#98989D</color>
+    <color name="text_subtle">#6E6E73</color>
+    <color name="glass_highlight">#44FFFFFF</color>
+    <color name="default_ambient_glow">#6C5CE7</color>
+</resources>

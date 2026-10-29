@@ -519,6 +519,7 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
         }
 
         return keyCode == KeyEvent.KEYCODE_SETTINGS // 176
+                || keyCode == 83 // KEYCODE_NOTIFICATION (Hisense physical remote settings gear button)
 
                 || keyCode == 357 // Virtual remote SETTINGS key on Android TV / Hisense
 

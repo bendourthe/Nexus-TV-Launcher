@@ -6370,7 +6370,11 @@ public class MainActivity extends Activity {
 
         }
 
-        // isSettingsKey handled cleanly with debounce in dispatchKeyEvent
+        if (HomeButtonAccessibilityService.isSettingsKey(keyCode)) {
+            openOriginalTvSettings();
+            return true;
+        }
+        // isSettingsKey also handled with debounce in dispatchKeyEvent
 
         return super.onKeyDown(keyCode, event);
 

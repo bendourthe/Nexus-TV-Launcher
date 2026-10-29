@@ -974,6 +974,9 @@ public class AnimatedWaveBackgroundView extends View {
 
 
 
+        if (natureWallpapers.size() > 1) Collections.shuffle(natureWallpapers, new java.util.Random());
+        if (spaceWallpapers.size() > 1) Collections.shuffle(spaceWallpapers, new java.util.Random());
+        if (citiesWallpapers.size() > 1) Collections.shuffle(citiesWallpapers, new java.util.Random());
         Log.i(TAG, "Wallpapers discovered - Nature: " + natureWallpapers.size()
 
                 + ", Space: " + spaceWallpapers.size() + ", Cities: " + citiesWallpapers.size());
@@ -1084,6 +1087,10 @@ public class AnimatedWaveBackgroundView extends View {
 
 
 
+            List<String> list = getListForCategory(category);
+            if (list != null && list.size() > 1) {
+                Collections.shuffle(list, new java.util.Random());
+            }
             currentPhotoIndex = 0;
 
 
@@ -1252,7 +1259,12 @@ public class AnimatedWaveBackgroundView extends View {
 
 
 
-            currentPhotoIndex = (currentPhotoIndex + 1) % list.size();
+            if (currentPhotoIndex + 1 >= list.size()) {
+                Collections.shuffle(list, new java.util.Random());
+                currentPhotoIndex = 0;
+            } else {
+                currentPhotoIndex++;
+            }
 
 
 

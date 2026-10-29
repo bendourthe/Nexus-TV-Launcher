@@ -34,10 +34,91 @@
 - **Multi-Device Local Sync**: Automatic UDP peer discovery and state synchronization between TVs on the same local network (`ProfileSyncManager`).
 - **Dynamic Themes & 4K Wallpaper Slideshows**:
   - **Dynamic Abstract**: Procedural OpenGL / Canvas undulating ambient wave mesh with multiple colorways (Cosmic Violet, Midnight Cyan, Cyberpunk Neon, Aurora, Solar Flare, Emerald, and Deep Obsidian).
-  - **Nature (4K)**: 18 high-resolution curated landscapes (Yosemite, Banff Moraine Lake, Matterhorn, Lofoten Aurora, Grand Canyon, Dolomites, etc.).
-  - **Space (4K)**: 17 high-resolution NASA / Webb / Hubble astrophotography images (Carina Nebula, Pillars of Creation, Jupiter Great Red Spot, Saturn Rings, Andromeda, etc.).
-  - **Cities (4K)**: 16 high-resolution global skylines (Tokyo, Manhattan, Singapore, Dubai, Paris, London, Chicago, etc.).
+  - **Nature (4K)**: 52 ultra-high-resolution curated landscapes (Yosemite, Banff Moraine Lake, Matterhorn, Lofoten Aurora, Grand Canyon, Dolomites, etc.) (Yosemite, Banff Moraine Lake, Matterhorn, Lofoten Aurora, Grand Canyon, Dolomites, etc.).
+  - **Space (4K)**: 25 ultra-high-resolution NASA / Webb / Hubble astrophotography images (Carina Nebula, Pillars of Creation, Jupiter Great Red Spot, Saturn Rings, Andromeda, etc.) (Carina Nebula, Pillars of Creation, Jupiter Great Red Spot, Saturn Rings, Andromeda, etc.).
+  - **Cities (4K)**: 30 ultra-high-resolution global skylines (Tokyo, Manhattan, Singapore, Dubai, Paris, London, Chicago, etc.) (Tokyo, Manhattan, Singapore, Dubai, Paris, London, Chicago, etc.).
   - **Smooth Slideshow Transitions**: Configurable rotation interval (1 min, 5 min default, 15 min, 30 min, 1 hour, or fixed) with silky 2.2-second crossfade transitions, subtle Ken Burns pan/zoom drift, and protective readability gradient overlays.
+
+---
+
+---
+
+## Visual Showcase: The Nexus TV Experience
+
+Nexus TV Launcher transforms ordinary smart televisions into clean, responsive, cinema-grade entertainment displays.
+
+| Stock Manufacturer Launcher | Nexus TV Launcher |
+| :--- | :--- |
+| **Aggressive Advertisements**: Full-screen auto-playing promotional trailers, banner ads, and sponsored partner banners. | **Zero Ads**: 100% clean, silent, and distraction-free interface focused purely on your media. |
+| **Bloated Clutter**: Dozens of endless algorithmic rows and uncurated recommendations pushing unwanted services. | **Minimalist Architecture**: A single fluid app dock and a unified Continue Watching shelf. |
+| **Laggy Navigation**: Stuttering UI frames due to background telemetry, store polling, and heavy JavaScript runtimes. | **Native 60 FPS Leanback**: Lightweight native Android Java codebase with instant Layer-29 zero-flicker masking. |
+| **Static Locked Aesthetics**: Fixed manufacturer branding with no aesthetic personalization. | **Dynamic 4K Slideshow Themes**: Curated 4K Nature, Deep Space, World Cities, and procedurally rendered fluid wave mesh. |
+
+---
+
+### Modern 4K Photo Themes
+
+Nexus TV Launcher features 107 pristine 4K wallpapers curated specifically for large-screen OLED and LED displays with randomized non-repeating slideshows and configurable crossfade intervals:
+
+<p align="center">
+  <img src="assets/screenshots/01-home-nature-4k.png" alt="Nature Theme (4K)" width="880" />
+  <br />
+  <em>Nature Landscapes (4K): Mountain vistas, serene lakes, alpine forests, and botanical photography.</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/02-home-cities-4k.png" alt="Cities Theme (4K)" width="880" />
+  <br />
+  <em>World City Skylines (4K): Twilight architecture across London, Tokyo, Singapore, Dubai, and Manhattan.</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/03-home-space-4k.png" alt="Space Theme (4K)" width="880" />
+  <br />
+  <em>Deep Space & Cosmos (4K): Astrophotography from Hubble and James Webb, planetary flybys, and stellar nebulae.</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/04-home-abstract-waves.png" alt="Dynamic Abstract Wave Theme" width="880" />
+  <br />
+  <em>Dynamic Abstract: Procedural fluid wave mesh in Cosmic Violet, Cyberpunk, Aurora, and Obsidian colorways.</em>
+</p>
+
+---
+
+### In-App Theme & Slideshow Controls
+
+Customizing your television background is seamless directly from the remote:
+
+<p align="center">
+  <img src="assets/screenshots/05-themes-dialog.png" alt="Wallpaper & Ambient Themes Selector" width="760" />
+  <br />
+  <em>Instant theme switching, rotation timing (1 min, 5 min default, 15 min, 30 min, 1 hour), and modern frosted-glass wallpaper navigation controls.</em>
+</p>
+
+---
+
+### Multi-User Profiles with Custom Avatars
+
+Household members each get independent watch queues, personalized continue-watching history, and customized illustrated character avatars:
+
+<p align="center">
+  <img src="assets/screenshots/06-user-profiles-dialog.png" alt="Multi-User Profile Switcher" width="760" />
+  <br />
+  <em>Quick account switcher with high-resolution avatars across superheroes, anime, sci-fi, animals, and monogram categories.</em>
+</p>
+
+---
+
+### Unified Continue Watching with Provider Filters
+
+Direct entity-level deep linking resumes playback in one click across Disney+, HBO Max, Apple TV+, Prime Video, Netflix, and Peacock:
+
+<p align="center">
+  <img src="assets/screenshots/07-continue-watching-shelf.png" alt="Continue Watching Shelf & Provider Filtering" width="880" />
+  <br />
+  <em>Provider filter pills (All, Disney+, Max, etc.), precise resume percentage bars, and instant launch routing.</em>
+</p>
 
 ---
 
@@ -48,7 +129,7 @@
 | **Home** | `KEYCODE_HOME` (3) | Instantly brings Nexus TV Launcher to the front with zero-flicker masking. |
 | **Account / Profile** | `KEYCODE_PROFILE_SWITCH` (288) | Opens the custom **User Profiles** dialog with avatar previews and active indicator. |
 | **TV Input** | `KEYCODE_TV_INPUT` (178) / `KEYCODE_WINDOW` (171) | Opens the custom **TV Inputs** dialog (HDMI 1, HDMI 2, TV tuner, etc.). |
-| **Settings (Gear Icon)** | `KEYCODE_SETTINGS` (176) / `357` / Quick Settings | Opens native Android TV / Fire TV system settings directly. |
+| **Settings (Gear Icon)** | `KEYCODE_SETTINGS` (176) / `KEYCODE_NOTIFICATION` (83 - Hisense) / `357` / Quick Settings | Opens native Android TV / Fire TV system settings directly. |
 | **Back** | `KEYCODE_BACK` (4) | Dismisses dialogs or exits dock reordering mode. |
 | **Menu** | `KEYCODE_MENU` (82) | Opens app options (Pin to Dock, App Info, Uninstall) for the focused tile. |
 

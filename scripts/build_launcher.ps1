@@ -60,6 +60,21 @@ $jarExit = $LASTEXITCODE
 Pop-Location
 if ($jarExit -ne 0) { throw "jar uf0 failed with exit code $jarExit" }
 
+Write-Output "6b. Normalizing APK zip entry separators to POSIX forward slashes..."
+python -c "
+import zipfile, os, shutil
+src = r'$outDir\app-unaligned.apk'
+tmp = r'$outDir\app-unaligned-fixed.apk'
+with zipfile.ZipFile(src, 'r') as zin, zipfile.ZipFile(tmp, 'w') as zout:
+    for item in zin.infolist():
+        data = zin.read(item.filename)
+        item.filename = item.filename.replace('\\\\', '/')
+        if hasattr(item, 'orig_filename'):
+            item.orig_filename = item.orig_filename.replace('\\\\', '/')
+        zout.writestr(item, data, compress_type=item.compress_type)
+shutil.move(tmp, src)
+"
+
 Write-Output "7. Aligning APK with zipalign..."
 $alignedApk = "$outDir\clean-launcher-aligned.apk"
 Remove-Item $alignedApk -ErrorAction SilentlyContinue

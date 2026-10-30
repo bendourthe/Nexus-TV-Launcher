@@ -11,6 +11,9 @@ tools/
 # Temporary logs and runtime files
 *.log
 .system_generated/
+# Local Nexus-Hub session records
+/.nexus/context/
+/.nexus/observations.jsonl
 __pycache__/
 *.pyc
 *.odex

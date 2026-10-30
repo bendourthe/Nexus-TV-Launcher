@@ -203,6 +203,7 @@ public class MainActivity extends Activity {
     private TextView tvWeatherCondition;
 
     private TextView btnProfile;
+    private boolean anonymousScreenshotMode = false;
 
     private TextView btnTheme;
 
@@ -893,6 +894,11 @@ public class MainActivity extends Activity {
             getWindow().getDecorView().post(this::showThemeDialog);
         }
 
+        if (intent != null && intent.hasExtra("anonymous_mode")) {
+            anonymousScreenshotMode = intent.getBooleanExtra("anonymous_mode", false);
+            updateProfilePill();
+        }
+
         if (intent != null && intent.getBooleanExtra("EXTRA_OPEN_USER_MENU", false)) {
 
             getWindow().getDecorView().post(this::showProfileSelectionDialog);
@@ -1467,9 +1473,9 @@ public class MainActivity extends Activity {
 
         if (btnProfile != null) {
 
-            String p = WatchNextManager.getCurrentProfile(this);
-
-            String av = WatchNextManager.getProfileAvatar(this, p);
+            String rawP = WatchNextManager.getCurrentProfile(this);
+            String p = anonymousScreenshotMode ? "Profile" : rawP;
+            String av = WatchNextManager.getProfileAvatar(this, rawP);
 
             final float density = getResources().getDisplayMetrics().density;
 
@@ -4192,7 +4198,7 @@ public class MainActivity extends Activity {
 
         android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
 
-        bg.setColor(0xF0181A24);
+        bg.setColor(0xFF14161F);
 
         bg.setCornerRadius(22f * density);
 
@@ -4275,9 +4281,11 @@ public class MainActivity extends Activity {
 
         for (String p : profiles) {
 
-            final String profileName = p;
+            final String rawProfileName = p;
 
-            final boolean isActive = profileName.equalsIgnoreCase(current);
+            final boolean isActive = rawProfileName.equalsIgnoreCase(current);
+
+            final String profileName = anonymousScreenshotMode ? (isActive ? "Family" : "Kids") : rawProfileName;
 
 
 
@@ -4309,17 +4317,17 @@ public class MainActivity extends Activity {
 
             android.graphics.drawable.GradientDrawable defaultBg = new android.graphics.drawable.GradientDrawable();
 
-            defaultBg.setColor(isActive ? 0x2800E5FF : 0x22FFFFFF);
+            defaultBg.setColor(isActive ? 0xFF1C2C38 : 0xFF1E212D);
 
             defaultBg.setCornerRadius(16f * density);
 
-            defaultBg.setStroke((int) (1.5f * density), isActive ? 0x6600E5FF : 0x25FFFFFF);
+            defaultBg.setStroke((int) (1.5f * density), isActive ? 0xFF00E5FF : 0xFF2E3242);
 
 
 
             android.graphics.drawable.GradientDrawable focusedBg = new android.graphics.drawable.GradientDrawable();
 
-            focusedBg.setColor(isActive ? 0xFF1C2C38 : 0xFF222634);
+            focusedBg.setColor(0xFF1C2C38);
             focusedBg.setCornerRadius(16f * density);
             focusedBg.setStroke((int) (2.5f * density), 0xFF00E5FF);
 
@@ -4408,13 +4416,15 @@ public class MainActivity extends Activity {
 
                 badge.setText("ACTIVE");
 
-                badge.setTextSize(11f);
+                badge.setTextSize(12f);
 
-                badge.setTextColor(0xFF001420);
+                badge.setTextColor(0xFF000000);
 
-                int bH = (int) (10 * density);
+                badge.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
 
-                int bV = (int) (4 * density);
+                int bH = (int) (12 * density);
+
+                int bV = (int) (5 * density);
 
                 badge.setPadding(bH, bV, bH, bV);
 
@@ -4424,11 +4434,7 @@ public class MainActivity extends Activity {
 
                 bBg.setCornerRadius(10f * density);
 
-                bBg.setStroke((int) (1f * density), 0x8800E5FF);
-
                 badge.setBackground(bBg);
-
-                if (outfitTypeface != null) badge.setTypeface(outfitTypeface, Typeface.BOLD);
 
                 tile.addView(badge);
 
@@ -4524,7 +4530,7 @@ public class MainActivity extends Activity {
         // Customize Profile Option
 
         View btnCustomize = createDialogTile("Customize Profile Avatar",
-                "Choose character art, colors, or initials for " + current, () -> {
+                "Choose character art, colors, or initials for " + (anonymousScreenshotMode ? "Family" : current), () -> {
             showAvatarSelectionDialog(current);
         });
 
@@ -6435,7 +6441,7 @@ public class MainActivity extends Activity {
 
         android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
 
-        bg.setColor(0xF0181A24);
+        bg.setColor(0xFF14161F);
 
         bg.setCornerRadius(22f * density);
 
@@ -6905,7 +6911,7 @@ public class MainActivity extends Activity {
 
         android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
 
-        bg.setColor(0xF0181A24);
+        bg.setColor(0xFF14161F);
 
         bg.setCornerRadius(22f * density);
 
@@ -7071,11 +7077,11 @@ public class MainActivity extends Activity {
 
         android.graphics.drawable.GradientDrawable defaultBg = new android.graphics.drawable.GradientDrawable();
 
-        defaultBg.setColor(0x22FFFFFF);
+        defaultBg.setColor(0xFF1E212D);
 
         defaultBg.setCornerRadius(14f * density);
 
-        defaultBg.setStroke((int) (1 * density), 0x25FFFFFF);
+        defaultBg.setStroke((int) (1.5f * density), 0xFF2E3242);
 
 
 

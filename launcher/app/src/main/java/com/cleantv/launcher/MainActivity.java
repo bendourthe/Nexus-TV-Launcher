@@ -434,6 +434,14 @@ public class MainActivity extends Activity {
 
             return null;
 
+        if (dialog.getWindow() != null) {
+            android.view.WindowManager.LayoutParams lp = dialog.getWindow().getAttributes();
+            lp.alpha = 1.0f;
+            dialog.getWindow().setAttributes(lp);
+            dialog.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            dialog.getWindow().setDimAmount(0.75f);
+        }
+
         activeDialogs.add(dialog);
 
         dialog.setOnKeyListener((d, keyCode, event) -> {
@@ -2090,6 +2098,23 @@ public class MainActivity extends Activity {
 
 
 
+    private Drawable resolveAppBanner(String pkg, Drawable systemBanner) {
+        if (pkg != null) {
+            String p = pkg.toLowerCase();
+            if (p.contains("peacock")) {
+                try {
+                    return getDrawable(R.drawable.banner_peacock);
+                } catch (Throwable ignored) {}
+            }
+            if (p.contains("appletv") || p.contains("apple.atve")) {
+                try {
+                    return getDrawable(R.drawable.banner_appletv);
+                } catch (Throwable ignored) {}
+            }
+        }
+        return systemBanner;
+    }
+
     private void loadInstalledApps() {
 
         allInstalledApps.clear();
@@ -2156,7 +2181,7 @@ public class MainActivity extends Activity {
 
 
 
-            Drawable banner = ri.activityInfo.loadBanner(pm);
+            Drawable banner = resolveAppBanner(pkg, ri.activityInfo.loadBanner(pm));
 
             Drawable icon = ri.activityInfo.loadIcon(pm);
 
@@ -2810,11 +2835,11 @@ public class MainActivity extends Activity {
 
         SharedPreferences sp = getSharedPreferences("CleanTvWatchNextPrefs", Context.MODE_PRIVATE);
 
-        if (!sp.getBoolean("v8_uuid_deep_links", false)) {
+        if (!sp.getBoolean("v9_pure_dynamic_harvest", false)) {
 
             WatchNextManager.resetAllContinueWatching(this);
 
-            sp.edit().putBoolean("v8_uuid_deep_links", true).apply();
+            sp.edit().putBoolean("v9_pure_dynamic_harvest", true).apply();
 
         }
 
@@ -4483,9 +4508,11 @@ public class MainActivity extends Activity {
 
                 badge.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
 
-                int bH = (int) (12 * density);
+                badge.setLetterSpacing(0.06f);
 
-                int bV = (int) (5 * density);
+                int bH = (int) (14 * density);
+
+                int bV = (int) (6 * density);
 
                 badge.setPadding(bH, bV, bH, bV);
 
@@ -5618,6 +5645,11 @@ public class MainActivity extends Activity {
         root.setClipToPadding(false);
         int pad = (int) (18 * density);
         root.setPadding(pad, pad, pad, pad);
+        android.graphics.drawable.GradientDrawable themeBg = new android.graphics.drawable.GradientDrawable();
+        themeBg.setColor(0xFF14161F);
+        themeBg.setCornerRadius(22f * density);
+        themeBg.setStroke((int) (1.5f * density), 0x30FFFFFF);
+        root.setBackground(themeBg);
 
         // Header
         TextView tvCatHeader = new TextView(this);
@@ -5661,10 +5693,18 @@ public class MainActivity extends Activity {
             topRow.addView(tvTitle, tLp);
 
             TextView tvBadge = new TextView(this);
-            tvBadge.setText("✓ ACTIVE");
+            tvBadge.setText("ACTIVE");
             tvBadge.setTextSize(11f);
-            tvBadge.setTextColor(0xFF00E5FF);
-            if (outfitTypeface != null) tvBadge.setTypeface(outfitTypeface, Typeface.BOLD);
+            tvBadge.setTextColor(0xFF000000);
+            tvBadge.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+            tvBadge.setLetterSpacing(0.06f);
+            int tbH = (int) (10 * density);
+            int tbV = (int) (4 * density);
+            tvBadge.setPadding(tbH, tbV, tbH, tbV);
+            android.graphics.drawable.GradientDrawable tbBg = new android.graphics.drawable.GradientDrawable();
+            tbBg.setColor(0xFF00E5FF);
+            tbBg.setCornerRadius(8f * density);
+            tvBadge.setBackground(tbBg);
             topRow.addView(tvBadge);
 
             card.addView(topRow);

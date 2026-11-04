@@ -338,4 +338,23 @@
   - Compiled and packaged release APK (\launcher/build/clean-launcher-release.apk\) using direct Android SDK build tools.
   - Deployed to both test devices: Hisense Google TV (.0.0.96:5555\) and Amazon Fire TV (.0.0.169:5555\).
   - Verified active ContentObserver registration on both devices via live logcat.
+### Phase 27 - Pure Dynamic Continue Watching Harvesting, Dock Banner Repair, and Dialog Opacity Hardening
 
+- [x] Pure Dynamic In-App Continue Watching Architecture:
+  - Completely eliminated all hardcoded/synthetic placeholder seeds (uildBenAuthenticShowsSeed) from WatchNextManager.java.
+  - Added auto-migration (9_pure_dynamic_harvest) to purge all legacy seeded items from local storage on startup.
+  - Enhanced HomeButtonAccessibilityService to dynamically harvest real in-app Continue Watching shelves, stripping interaction artifacts and parsing season/episode tokens (S1:E7 • Episode Title).
+  - Combined real-time accessibility harvesting with media playback notification listener and system EPG querying with zero visible automated screen navigation.
+- [x] Dock Banner Resolution on Fire TV & Android TV:
+  - Generated seamless, high-resolution 16:9 banners for Peacock (anner_peacock.png) and Apple TV (anner_appletv.png) with clean vector logos and deep dark obsidian backgrounds.
+  - Added 
+esolveAppBanner() in MainActivity.java to supply dedicated 16:9 assets when package manager returns null or unscaled icons.
+  - Eliminated letterboxing and tiny icons in dock tiles across both devices.
+- [x] Dialog Window Transparency and Badge Contrast Elimination:
+  - Hardened 	rackDialog with lp.alpha = 1.0f to prevent device themes from applying window-level transparency.
+  - Added FLAG_DIM_BEHIND and set dim amount to 0.75 for a focused, distraction-free modal experience.
+  - Set solid opaque #14161F background on Theme dialog and User Profiles container.
+  - Upgraded ACTIVE pill badges across User Profiles and Themes with bold black text (#000000), letter spacing, and high-visibility electric-cyan pills (#00E5FF).
+- [x] Build and Live Deployment:
+  - Rebuilt and signed release APK launcher/build/clean-launcher-release.apk (428 MB).
+  - Deployed and verified on Hisense Google TV (10.0.0.96:5555).

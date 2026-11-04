@@ -1834,23 +1834,34 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
 
 
         boolean sectionDetected = inWatchlistSection;
-
         if (!inWatchlistSection) {
-
             String combined = (text + " " + desc).toLowerCase();
-
             for (String kw : WATCHLIST_KEYWORDS) {
-
                 if (combined.contains(kw)) {
-
                     sectionDetected = true;
-
+                    try {
+                        AccessibilityNodeInfo parent = node.getParent();
+                        if (parent != null) {
+                            int siblingCount = parent.getChildCount();
+                            for (int s = 0; s < siblingCount; s++) {
+                                AccessibilityNodeInfo sibling = parent.getChild(s);
+                                if (sibling != null) {
+                                    try {
+                                        if (!sibling.equals(node)) {
+                                            harvestNodesRecursive(sibling, pkg, true, depth + 1);
+                                        }
+                                    } finally {
+                                        sibling.recycle();
+                                    }
+                                }
+                            }
+                            parent.recycle();
+                        }
+                    } catch (Throwable ignored) {
+                    }
                     break;
-
                 }
-
             }
-
         }
 
 

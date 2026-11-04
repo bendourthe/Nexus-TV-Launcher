@@ -155,6 +155,7 @@ public class WatchNextNotificationListener extends NotificationListenerService {
                 String badge = WatchNextManager.resolveBadgeFromPackage(pkg);
                 int color = WatchNextManager.resolveBrandColor(pkg);
 
+                long ts = obj.optLong("timestamp", System.currentTimeMillis());
                 list.add(new WatchNextItem(
                         "notif_" + i,
                         pkg,
@@ -167,7 +168,8 @@ public class WatchNextNotificationListener extends NotificationListenerService {
                         null,
                         null,
                         0,
-                        bmp
+                        bmp,
+                        ts
                 ));
             }
         } catch (Throwable t) {

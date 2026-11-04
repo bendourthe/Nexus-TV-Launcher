@@ -27,22 +27,29 @@ public class WatchNextItem {
     public final Drawable backdrop;
     public final int drawableResId;
     public final Bitmap posterBitmap;
+    public final long lastEngagementTime;
 
     public WatchNextItem(String id, String packageName, String appBadge, String showTitle,
                           String episodeInfo, boolean isNewEpisode, int progressPercent,
                           int brandColor, String intentUri, Drawable backdrop) {
-        this(id, packageName, appBadge, showTitle, episodeInfo, isNewEpisode, progressPercent, brandColor, intentUri, backdrop, 0, null);
+        this(id, packageName, appBadge, showTitle, episodeInfo, isNewEpisode, progressPercent, brandColor, intentUri, backdrop, 0, null, 0L);
     }
 
     public WatchNextItem(String id, String packageName, String appBadge, String showTitle,
                           String episodeInfo, boolean isNewEpisode, int progressPercent,
                           int brandColor, String intentUri, Drawable backdrop, int drawableResId) {
-        this(id, packageName, appBadge, showTitle, episodeInfo, isNewEpisode, progressPercent, brandColor, intentUri, backdrop, drawableResId, null);
+        this(id, packageName, appBadge, showTitle, episodeInfo, isNewEpisode, progressPercent, brandColor, intentUri, backdrop, drawableResId, null, 0L);
     }
 
     public WatchNextItem(String id, String packageName, String appBadge, String showTitle,
                           String episodeInfo, boolean isNewEpisode, int progressPercent,
                           int brandColor, String intentUri, Drawable backdrop, int drawableResId, Bitmap posterBitmap) {
+        this(id, packageName, appBadge, showTitle, episodeInfo, isNewEpisode, progressPercent, brandColor, intentUri, backdrop, drawableResId, posterBitmap, 0L);
+    }
+
+    public WatchNextItem(String id, String packageName, String appBadge, String showTitle,
+                          String episodeInfo, boolean isNewEpisode, int progressPercent,
+                          int brandColor, String intentUri, Drawable backdrop, int drawableResId, Bitmap posterBitmap, long lastEngagementTime) {
         this.id = id;
         this.packageName = packageName;
         this.appBadge = appBadge;
@@ -55,6 +62,7 @@ public class WatchNextItem {
         this.backdrop = backdrop;
         this.drawableResId = drawableResId;
         this.posterBitmap = posterBitmap;
+        this.lastEngagementTime = lastEngagementTime;
     }
 
     public Drawable getPoster(Context context) {

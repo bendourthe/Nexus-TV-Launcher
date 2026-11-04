@@ -321,3 +321,21 @@
   - Captured 7 uncompressed 1080p screenshots from live Hisense TV.
   - Redacted all personal usernames (`Ben ▾` to `Profile ▾`, `Ben` to `Family`, `Jessica` to `Kids`).
   - Reordered theme screenshots in `README.md` to start with Dynamic Abstract, followed by Nature, Space, and Cities, matching the in-app Theme selection menu.
+
+### Phase 26 - Real-Time Continue Watching EPG Synchronization and Multi-TV Deployment
+
+- [x] Live ContentObserver and EPG Priority:
+  - Registered ContentObserver on \content://android.media.tv/watch_next_program\ in \MainActivity.java\ with a 300ms debounce runnable to instantly reflect external app playback events.
+  - Added a fallback 45-second periodic refresh loop (\periodicWatchNextRefreshRunnable\) to keep the shelf fresh while the launcher is resumed.
+  - Overhauled \WatchNextManager.java\ to query the system \watch_next_program\ table first as authoritative live playback data.
+  - Extracted full EPG metadata: series title, episode title, season and episode numbers, playback position, duration, and last engagement timestamp.
+  - Added \lastEngagementTime\ field to \WatchNextItem.java\ and sorted live items in descending engagement order so newly watched content automatically surfaces first.
+  - Replaced hardcoded seed shows whenever active live EPG rows exist for the same show.
+  - Broadened \isWatchlistApp()\ to ingest all installed streaming media apps while strictly excluding YouTube.
+- [x] Leanback Accessibility Traversal:
+  - Fixed \HomeButtonAccessibilityService.java\ accessibility node tree traversal for Android TV Leanback rows, inspecting parent header siblings to capture card containers (\HorizontalGridView\).
+- [x] Dual TV Deployment and Verification:
+  - Compiled and packaged release APK (\launcher/build/clean-launcher-release.apk\) using direct Android SDK build tools.
+  - Deployed to both test devices: Hisense Google TV (.0.0.96:5555\) and Amazon Fire TV (.0.0.169:5555\).
+  - Verified active ContentObserver registration on both devices via live logcat.
+

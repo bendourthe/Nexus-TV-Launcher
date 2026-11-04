@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -806,19 +807,21 @@ public class WatchNextManager {
     }
 
     public static boolean isWatchlistApp(String pkg) {
-        if (pkg == null)
+        if (pkg == null || pkg.trim().isEmpty())
             return false;
-        String p = pkg.toLowerCase();
         if (isYouTube(pkg, null, null))
             return false;
-        return p.contains("disney")
-                || p.contains("hbo") || p.contains("wbd")
-                || p.contains("apple")
-                || p.contains("amazonvideo") || p.contains("prime") || p.contains("firebat") || p.contains("avod")
-                || p.contains("peacock")
-                || p.contains("hulu")
-                || p.contains("netflix")
-                || p.contains("paramount") || p.contains("cbs");
+        String p = pkg.toLowerCase();
+        if (p.contains("com.google.android.apps.tv.launcher")
+                || p.contains("com.amazon.tv.launcher")
+                || p.contains("setupwraith")
+                || p.contains("settings")
+                || p.contains("systemui")
+                || p.contains("cleantv")
+                || p.contains("inputdevices")) {
+            return false;
+        }
+        return true;
     }
 
     public static List<WatchNextItem> loadAllWatchNext(Context context, Map<String, AppItem> appMap) {
@@ -830,24 +833,15 @@ public class WatchNextManager {
         List<WatchNextItem> rawList = new ArrayList<>();
         SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         Set<String> dismissed = sp.getStringSet(KEY_DISMISSED, new HashSet<>());
+        Set<String> addedShowKeys = new HashSet<>();
 
-        // 1. Load active profile custom / discovered continue watching shows
-        List<WatchNextItem> customItems = loadCustomItems(context, appMap);
-        for (WatchNextItem ci : customItems) {
-            if (!dismissed.contains(ci.id) && isPlausibleShowTitle(ci.showTitle) && isWatchlistApp(ci.packageName)
-                    && !isYouTube(ci.packageName, ci.appBadge, ci.showTitle)) {
-                rawList.add(ci);
-            }
-        }
-
-        // 2. Native Android TV EPG ContentProvider (Filtered: NO YouTube, with Real
-        // Show Artwork)
+        // 1. Native Android TV / Google TV EPG ContentProvider (PRIMARY LIVE DATA)
         try {
             Uri epgUri = Uri.parse("content://android.media.tv/watch_next_program");
             Cursor cursor = context.getContentResolver().query(epgUri, null, null, null,
                     "last_engagement_time_utc_millis DESC");
             if (cursor != null) {
-                while (cursor.moveToNext() && rawList.size() < 24) {
+                while (cursor.moveToNext() && rawList.size() < 30) {
                     try {
                         long id = cursor.getLong(cursor.getColumnIndexOrThrow("_id"));
                         String idStr = "epg_" + id;
@@ -858,24 +852,72 @@ public class WatchNextManager {
                         if (pkg == null || !isWatchlistApp(pkg))
                             continue;
 
-                        String title = cursor.getString(cursor.getColumnIndexOrThrow("title"));
-                        if (title == null || !isPlausibleShowTitle(title) || isYouTube(null, null, title))
+                        String rawTitle = null;
+                        int titleIdx = cursor.getColumnIndex("title");
+                        if (titleIdx >= 0)
+                            rawTitle = cursor.getString(titleIdx);
+
+                        String seriesTitle = null;
+                        int seriesIdx = cursor.getColumnIndex("series_title");
+                        if (seriesIdx >= 0)
+                            seriesTitle = cursor.getString(seriesIdx);
+
+                        String showTitle;
+                        if (seriesTitle != null && !seriesTitle.trim().isEmpty() && isPlausibleShowTitle(seriesTitle)) {
+                            showTitle = seriesTitle.trim();
+                        } else if (rawTitle != null && !rawTitle.trim().isEmpty() && isPlausibleShowTitle(rawTitle)) {
+                            showTitle = rawTitle.trim();
+                        } else {
+                            continue;
+                        }
+
+                        if (isYouTube(pkg, null, showTitle))
                             continue;
 
-                        boolean dup = false;
-                        for (WatchNextItem existing : rawList) {
-                            if (existing.showTitle.equalsIgnoreCase(title.trim())) {
-                                dup = true;
-                                break;
-                            }
-                        }
-                        if (dup)
+                        String showKey = (pkg + "_" + showTitle).toLowerCase(java.util.Locale.ROOT);
+                        if (addedShowKeys.contains(showKey))
                             continue;
 
                         String epTitle = null;
                         int epIdx = cursor.getColumnIndex("episode_title");
                         if (epIdx >= 0)
                             epTitle = cursor.getString(epIdx);
+
+                        String seasonNum = null;
+                        int sIdx = cursor.getColumnIndex("season_display_number");
+                        if (sIdx >= 0)
+                            seasonNum = cursor.getString(sIdx);
+
+                        String epNum = null;
+                        int epNumIdx = cursor.getColumnIndex("episode_display_number");
+                        if (epNumIdx >= 0)
+                            epNum = cursor.getString(epNumIdx);
+
+                        StringBuilder epBuilder = new StringBuilder();
+                        if (seasonNum != null && !seasonNum.isEmpty()) {
+                            epBuilder.append("S").append(seasonNum);
+                            if (epNum != null && !epNum.isEmpty()) {
+                                epBuilder.append(":E").append(epNum);
+                            }
+                        } else if (epNum != null && !epNum.isEmpty()) {
+                            epBuilder.append("E").append(epNum);
+                        }
+
+                        if (epTitle != null && !epTitle.trim().isEmpty()) {
+                            if (epBuilder.length() > 0) {
+                                epBuilder.append(" • ").append(epTitle.trim());
+                            } else {
+                                epBuilder.append(epTitle.trim());
+                            }
+                        } else if (seriesTitle != null && rawTitle != null && !rawTitle.equalsIgnoreCase(seriesTitle)) {
+                            if (epBuilder.length() > 0) {
+                                epBuilder.append(" • ").append(rawTitle.trim());
+                            } else {
+                                epBuilder.append(rawTitle.trim());
+                            }
+                        }
+
+                        String epDisplay = epBuilder.length() > 0 ? epBuilder.toString() : "Resume Playback";
 
                         long pos = 0;
                         int posIdx = cursor.getColumnIndex("last_playback_position_millis");
@@ -892,6 +934,13 @@ public class WatchNextManager {
                         int intentIdx = cursor.getColumnIndex("intent_uri");
                         if (intentIdx >= 0)
                             intentUri = cursor.getString(intentIdx);
+
+                        long lastEngagement = 0;
+                        int engIdx = cursor.getColumnIndex("last_engagement_time_utc_millis");
+                        if (engIdx >= 0)
+                            lastEngagement = cursor.getLong(engIdx);
+                        if (lastEngagement <= 0)
+                            lastEngagement = System.currentTimeMillis();
 
                         Bitmap posterBmp = null;
                         String posterUriStr = null;
@@ -916,22 +965,24 @@ public class WatchNextManager {
                         AppItem app = (appMap != null) ? appMap.get(pkg) : null;
                         String badge = app != null ? app.label : resolveBadgeFromPackage(pkg);
                         int brandColor = app != null ? app.themeColor : resolveBrandColor(pkg);
-                        int drawableId = resolveThumbnailForShow(title, badge);
+                        int drawableId = resolveThumbnailForShow(showTitle, badge);
 
                         WatchNextItem item = new WatchNextItem(
                                 idStr,
                                 pkg,
                                 badge,
-                                title,
-                                epTitle != null ? epTitle : "Resume Playback",
+                                showTitle,
+                                epDisplay,
                                 false,
                                 pct > 0 ? pct : 45,
                                 brandColor,
                                 intentUri,
                                 null,
                                 drawableId,
-                                posterBmp);
+                                posterBmp,
+                                lastEngagement);
                         rawList.add(item);
+                        addedShowKeys.add(showKey);
                     } catch (Throwable inner) {
                         Log.w(TAG, "Error parsing EPG row: " + inner.getMessage());
                     }
@@ -942,21 +993,29 @@ public class WatchNextManager {
             Log.d(TAG, "Native EPG query: " + t.getMessage());
         }
 
+        // 2. Load active profile custom / discovered continue watching shows
+        List<WatchNextItem> customItems = loadCustomItems(context, appMap);
+        for (WatchNextItem ci : customItems) {
+            if (!dismissed.contains(ci.id) && isPlausibleShowTitle(ci.showTitle) && isWatchlistApp(ci.packageName)
+                    && !isYouTube(ci.packageName, ci.appBadge, ci.showTitle)) {
+                String showKey = (ci.packageName + "_" + ci.showTitle).toLowerCase(java.util.Locale.ROOT);
+                if (!addedShowKeys.contains(showKey)) {
+                    rawList.add(ci);
+                    addedShowKeys.add(showKey);
+                }
+            }
+        }
+
         // 3. Saved Notification Recommendations (Fire TV & Google TV live feeds)
         try {
             List<WatchNextItem> notifItems = WatchNextNotificationListener.loadNotificationRecommendations(context);
             for (WatchNextItem ni : notifItems) {
                 if (!dismissed.contains(ni.id) && isPlausibleShowTitle(ni.showTitle) && isWatchlistApp(ni.packageName)
                         && !isYouTube(ni.packageName, ni.appBadge, ni.showTitle)) {
-                    boolean dup = false;
-                    for (WatchNextItem existing : rawList) {
-                        if (existing.showTitle.equalsIgnoreCase(ni.showTitle)) {
-                            dup = true;
-                            break;
-                        }
-                    }
-                    if (!dup) {
+                    String showKey = (ni.packageName + "_" + ni.showTitle).toLowerCase(java.util.Locale.ROOT);
+                    if (!addedShowKeys.contains(showKey)) {
                         rawList.add(ni);
+                        addedShowKeys.add(showKey);
                     }
                 }
             }
@@ -964,37 +1023,31 @@ public class WatchNextManager {
             Log.d(TAG, "Notification recommendations query: " + t.getMessage());
         }
 
-        // 4. Organize by App and Sort strictly matching the Dock order from left to
-        // right
-        if (dockOrder != null && !dockOrder.isEmpty()) {
-            Map<String, List<WatchNextItem>> appGroups = new LinkedHashMap<>();
-            for (WatchNextItem item : rawList) {
-                String key = getAppKey(item.packageName);
-                if (!appGroups.containsKey(key)) {
-                    appGroups.put(key, new ArrayList<>());
-                }
-                appGroups.get(key).add(item);
+        // 4. Chronological recency sorting: most recently watched programs first
+        Collections.sort(rawList, (a, b) -> {
+            if (a.lastEngagementTime != b.lastEngagementTime) {
+                return Long.compare(b.lastEngagementTime, a.lastEngagementTime);
             }
-
-            List<WatchNextItem> sortedList = new ArrayList<>();
-            // Pull apps in the exact dock order from left to right
-            for (String dockPkg : dockOrder) {
-                if (dockPkg == null || isYouTube(dockPkg, null, null))
-                    continue;
-                String dockKey = getAppKey(dockPkg);
-                List<WatchNextItem> group = appGroups.remove(dockKey);
-                if (group != null && !group.isEmpty()) {
-                    sortedList.addAll(group);
-                }
+            if (dockOrder != null && !dockOrder.isEmpty()) {
+                int idxA = getDockPriority(a.packageName, dockOrder);
+                int idxB = getDockPriority(b.packageName, dockOrder);
+                return Integer.compare(idxA, idxB);
             }
-            // Add any remaining items from installed apps not in dock
-            for (List<WatchNextItem> remaining : appGroups.values()) {
-                sortedList.addAll(remaining);
-            }
-            return sortedList;
-        }
+            return 0;
+        });
 
         return rawList;
+    }
+
+    private static int getDockPriority(String pkg, List<String> dockOrder) {
+        if (pkg == null || dockOrder == null) return 999;
+        String key = getAppKey(pkg);
+        for (int i = 0; i < dockOrder.size(); i++) {
+            if (key.equalsIgnoreCase(getAppKey(dockOrder.get(i)))) {
+                return i;
+            }
+        }
+        return 999;
     }
 
     public static boolean isPlausibleShowTitle(String text) {
@@ -1052,6 +1105,7 @@ public class WatchNextManager {
 
             sp.edit().putString(storageKey, newArr.toString()).apply();
             Log.i(TAG, "Saved dynamic watchlist show: " + title + " (" + pkg + ")");
+            MainActivity.requestRefreshContinueWatching();
         } catch (Throwable t) {
             Log.e(TAG, "saveDynamicWatchlistShow error", t);
         }
@@ -1265,6 +1319,7 @@ public class WatchNextManager {
                 }
                 cleanedArr.put(obj);
 
+                long itemTs = obj.optLong("timestamp", (id != null && id.startsWith("dynamic_")) ? System.currentTimeMillis() : 0L);
                 list.add(new WatchNextItem(
                         id,
                         pkg,
@@ -1277,7 +1332,8 @@ public class WatchNextManager {
                         intentUri,
                         null,
                         drawableId,
-                        null
+                        null,
+                        itemTs
                 ));
             }
             if (hadCorrupted) {

@@ -271,6 +271,33 @@ public class MainActivity extends Activity {
 
     private static volatile boolean sHasWindowFocus = false;
 
+    private android.database.ContentObserver watchNextObserver = null;
+    private final Runnable watchNextDebouncedRefresh = () -> {
+        Log.i("CleanTV", "watchNextObserver triggered: refreshing Continue Watching shelf");
+        populateContinueWatchingShelf();
+    };
+    private final Runnable periodicWatchNextRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (sIsResumed) {
+                populateContinueWatchingShelf();
+                mainHandler.postDelayed(this, 45000);
+            }
+        }
+    };
+
+    public static void requestRefreshContinueWatching() {
+        MainActivity inst = sInstance;
+        if (inst != null) {
+            inst.mainHandler.post(() -> {
+                try {
+                    inst.populateContinueWatchingShelf();
+                } catch (Throwable ignored) {
+                }
+            });
+        }
+    }
+
     private final List<android.app.Dialog> activeDialogs = new ArrayList<>();
     private final Map<String, ImageView> profileDialogAvatarViews = new HashMap<>();
 
@@ -955,6 +982,28 @@ public class MainActivity extends Activity {
 
         }
 
+        if (watchNextObserver == null) {
+            try {
+                watchNextObserver = new android.database.ContentObserver(mainHandler) {
+                    @Override
+                    public void onChange(boolean selfChange, Uri uri) {
+                        super.onChange(selfChange, uri);
+                        mainHandler.removeCallbacks(watchNextDebouncedRefresh);
+                        mainHandler.postDelayed(watchNextDebouncedRefresh, 300);
+                    }
+                };
+                getContentResolver().registerContentObserver(
+                        Uri.parse("content://android.media.tv/watch_next_program"),
+                        true,
+                        watchNextObserver);
+                Log.i("CleanTV", "watch_next_program ContentObserver registered successfully");
+            } catch (Throwable t) {
+                Log.w("CleanTV", "Failed to register watch_next ContentObserver: " + t.getMessage());
+            }
+        }
+        mainHandler.removeCallbacks(periodicWatchNextRefreshRunnable);
+        mainHandler.postDelayed(periodicWatchNextRefreshRunnable, 45000);
+
 
 
         if (!hasActiveDialogs()) {
@@ -1008,6 +1057,8 @@ public class MainActivity extends Activity {
         sIsResumed = false;
 
         sHasWindowFocus = false;
+
+        mainHandler.removeCallbacks(periodicWatchNextRefreshRunnable);
 
     }
 
@@ -1068,6 +1119,16 @@ public class MainActivity extends Activity {
         }
 
         sHasWindowFocus = false;
+
+        if (watchNextObserver != null) {
+            try {
+                getContentResolver().unregisterContentObserver(watchNextObserver);
+            } catch (Throwable ignored) {
+            }
+            watchNextObserver = null;
+        }
+        mainHandler.removeCallbacks(watchNextDebouncedRefresh);
+        mainHandler.removeCallbacks(periodicWatchNextRefreshRunnable);
 
         try {
 

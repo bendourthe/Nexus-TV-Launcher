@@ -376,3 +376,15 @@ esolveAppBanner() in MainActivity.java to supply dedicated 16:9 assets when pack
   - Deployed to Amazon Fire TV (`10.0.0.169:5555`) and Hisense Google TV (`10.0.0.96:5555`).
   - Captured live screenshot on Fire TV visually verifying pristine Home screen with all 6 channels rendered in uniform 16:9 format and zero Continue Watching shelf clutter.
 
+### Phase 29 - Visual Documentation Refresh, Native Screenshot Recapture, and Theme Dialog Polish
+
+- [x] On-Device Native Screenshot Recaptures:
+  - Recaptured all 7 1080p native screenshots across all themes (Dynamic Abstract, 4K Nature, 4K Space, 4K Cities) directly from live television hardware.
+  - Ensured all home screen screenshots completely eliminate Continue Watching segments, displaying the curated 6-channel dock directly transitioning to the All Apps drawer.
+  - Replaced obsolete Continue Watching shelf screenshot (`07-continue-watching-shelf.png`) with the 6-column alphabetical app drawer grid (`07-all-apps-grid.png`).
+- [x] README Showcase and Architecture Update:
+  - Updated `README.md` intro, highlights, comparison table, and visual showcase sections to reflect the 6-column phone-style app drawer and retired Continue Watching shelf.
+- [x] Themes Dialog Badge Contrast and Anonymous Mode Persistence:
+  - Fixed theme card `ACTIVE` badge text color in `MainActivity.java` from cyan (`0xFF00E5FF`) to bold black (`0xFF000000`) for high contrast on the electric-cyan pill.
+  - Persisted `anonymousScreenshotMode` statically to maintain privacy-safe labels across activity resume and key navigation cycles.
+

@@ -12,7 +12,7 @@
 
 # Nexus TV Launcher
 
-**Nexus TV Launcher** is a lightweight, ad-free, high-performance custom launcher engineered specifically for Android TV, Google TV, and Fire TV devices. It completely replaces the bloated, recommendation-heavy stock interfaces with a sleek, minimalist home screen featuring fluid GPU-accelerated wave wallpapers, unified Continue Watching shelves, multi-profile user management with custom avatars, and zero-flicker wake masking.
+**Nexus TV Launcher** is a lightweight, ad-free, high-performance custom launcher engineered specifically for Android TV, Google TV, and Fire TV devices. It completely replaces the bloated, recommendation-heavy stock interfaces with a sleek, minimalist home screen featuring fluid GPU-accelerated wave wallpapers, a 6-app quick-access dock, a 6-column phone-style alphabetical app drawer, multi-profile user management with custom avatars, and zero-flicker wake masking.
 
 ---
 
@@ -20,7 +20,7 @@
 
 - **Zero Ads and Clutter**: No sponsored banners, promotional auto-playing videos, or forced recommendation tiles.
 - **Zero-Flicker Instant Wake**: Specialized accessibility overlay service runs at Layer 29 (`TYPE_ACCESSIBILITY_OVERLAY`) to completely occlude the stock launcher during device power-on, screen wake, and Home button presses.
-- **Unified "Continue Watching" Shelf**: Aggregates playback history and deep links directly into Disney+, HBO Max, Apple TV+, Prime Video, Netflix, Peacock, and Hulu with entity UUID deep linking.
+- **Phone-Style Alphabetical App Drawer**: 6-column squircle grid with strict A-to-Z sorting and remote D-pad navigation across all installed television applications.
 - **Multi-User Profiles with Custom Avatars**:
   - Dedicated **Account Button** support (`KEYCODE_PROFILE_SWITCH` / keycode 288) triggers the custom User Menu dialog.
   - High-resolution illustrated character avatars across 10 categories (Superheroes, Sci-Fi, Landscapes, Space, Pop Culture, Animals, Cars, Anime, and Abstract) as well as gradient monograms.
@@ -50,7 +50,7 @@ Nexus TV Launcher transforms ordinary smart televisions into clean, responsive, 
 | Stock Manufacturer Launcher | Nexus TV Launcher |
 | :--- | :--- |
 | **Aggressive Advertisements**: Full-screen auto-playing promotional trailers, banner ads, and sponsored partner banners. | **Zero Ads**: 100% clean, silent, and distraction-free interface focused purely on your media. |
-| **Bloated Clutter**: Dozens of endless algorithmic rows and uncurated recommendations pushing unwanted services. | **Minimalist Architecture**: A single fluid app dock and a unified Continue Watching shelf. |
+| **Bloated Clutter**: Dozens of endless algorithmic rows and uncurated recommendations pushing unwanted services. | **Minimalist Architecture**: A single fluid app dock and a clean 6-column alphabetical app drawer with zero uncurated rows. |
 | **Laggy Navigation**: Stuttering UI frames due to background telemetry, store polling, and heavy JavaScript runtimes. | **Native 60 FPS Leanback**: Lightweight native Android Java codebase with instant Layer-29 zero-flicker masking. |
 | **Static Locked Aesthetics**: Fixed manufacturer branding with no aesthetic personalization. | **Dynamic 4K Slideshow Themes**: Curated 4K Nature, Deep Space, World Cities, and procedurally rendered fluid wave mesh. |
 
@@ -110,14 +110,14 @@ Household members each get independent watch queues, personalized continue-watch
 
 ---
 
-### Unified Continue Watching with Provider Filters
+### Alphabetical Phone-Style App Drawer
 
-Direct entity-level deep linking resumes playback in one click across Disney+, HBO Max, Apple TV+, Prime Video, Netflix, and Peacock:
+A clean 6-column grid organizes every installed application in strict alphabetical order with squircle icons and centered labels:
 
 <p align="center">
-  <img src="assets/screenshots/07-continue-watching-shelf.png" alt="Continue Watching Shelf & Provider Filtering" width="880" />
+  <img src="assets/screenshots/07-all-apps-grid.png" alt="6-Column Alphabetical Phone-Style App Drawer Grid" width="880" />
   <br />
-  <em>Provider filter pills (All, Disney+, Max, etc.), precise resume percentage bars, and instant launch routing.</em>
+  <em>Phone-style 6-column app drawer with strict A-to-Z sorting, squircle icons, and smooth vertical D-pad navigation.</em>
 </p>
 
 ---
@@ -168,10 +168,10 @@ Nexus TV Launcher resolves this via `HomeButtonAccessibilityService`:
 2. Employs a pre-staged `TYPE_ACCESSIBILITY_OVERLAY` surface at window layer 29.
 3. Automatically occludes stock frames during transition windows (15ms - 150ms) before smoothly revealing the Nexus TV home canvas.
 
-### 2. Multi-Profile Storage & Deep Linking
-User profiles and continue watching entries are stored in sandboxed `SharedPreferences` structured as:
-- `custom_shows_json_<profile_name>`: Active queue of shows and movies with playback percentages.
-- Canonical entity link resolver: Converts show metadata into native application intents (e.g. `https://www.disneyplus.com/series/...`, `https://play.max.com/show/...`, `https://app.primevideo.com/detail?gti=...`).
+### 2. Multi-Profile Storage & Profile Isolation
+User profiles, preferences, and custom avatar mappings are stored in sandboxed `SharedPreferences`:
+- Dedicated profile partitions for personalized wallpapers, themes, and dock configurations.
+- Fast switching between household member profiles with instant avatar visual updates.
 
 ---
 

@@ -59,3 +59,4 @@ Future engineering efforts may evaluate the following potential vectors if live 
 | **Trakt.tv / Simkl Scrobbler Integration** | Cloud Webhook / OAuth Sync | Requires the user to link their streaming accounts to a third-party tracking service (e.g., Trakt), which exposes an official REST API with authorized watch history. |
 | **System-Level Privileged App (`priv-app`)** | Root / System ROM Placement | On rooted hardware, placing Clean TV Launcher in `/system/priv-app/` allows reading system logs (`logcat -b events`) and inter-app broadcasts, though streaming app databases remain encrypted. |
 | **Local Network Packet Inspection** | Local VPN / MitM Proxy | Running a local pseudo-VPN service on Android to intercept telemetry pings. Non-viable without installing custom CA root certificates on the TV, which modern Android and streaming DRM strictly reject. |
+

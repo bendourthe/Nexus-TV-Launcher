@@ -203,7 +203,7 @@ public class MainActivity extends Activity {
     private TextView tvWeatherCondition;
 
     private TextView btnProfile;
-    private boolean anonymousScreenshotMode = false;
+    private static boolean anonymousScreenshotMode = false;
 
     private TextView btnTheme;
 
@@ -5749,7 +5749,7 @@ public class MainActivity extends Activity {
                     card.setTranslationZ(4f * density);
                     tvTitle.setTextColor(0xFFFFFFFF);
                     tvDesc.setTextColor(0xFFDDFBFF);
-                    tvBadge.setTextColor(0xFF00E5FF);
+                    tvBadge.setTextColor(0xFF000000);
                 } else {
                     card.setTranslationZ(0f);
                     if (isCur) {
@@ -5758,7 +5758,7 @@ public class MainActivity extends Activity {
                         bg.setStroke((int) (1.5f * density), 0x7700E5FF);
                         tvTitle.setTextColor(Color.WHITE);
                         tvDesc.setTextColor(0xFF9E9EA8);
-                        tvBadge.setTextColor(0xFF00E5FF);
+                        tvBadge.setTextColor(0xFF000000);
                     } else {
                         // Inactive cards
                         bg.setColor(0x14FFFFFF);

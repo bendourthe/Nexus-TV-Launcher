@@ -1894,41 +1894,70 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
         }
     }
 
+    private static final Set<String> KNOWN_BADGES_AND_RATINGS = new HashSet<>(Arrays.asList(
+            "disney+ original", "adult swim", "abc", "fx", "marvel", "pixar", "star wars",
+            "national geographic", "hbo", "max original", "hulu original", "netflix original",
+            "watch next episode", "rated tv-14", "rated tv-ma", "rated tv-pg", "rated pg-13",
+            "rated r", "rated g", "tv-14", "tv-ma", "tv-pg", "tv-g", "tv-y7", "tv-y", "pg-13"
+    ));
+
+    private static final Set<String> ROW_HEADER_KEYWORDS = new HashSet<>(Arrays.asList(
+            "recommended for you", "recommended", "continue watching", "keep watching", "watch next",
+            "trending", "top 10", "featured", "anime", "movies", "shows", "series", "originals",
+            "new releases", "just added", "action", "comedy", "drama", "animation", "sci-fi", "horror",
+            "thriller", "documentary", "kids", "family", "because you watched", "more like this",
+            "popular", "explore", "search", "settings", "home", "watchlist", "my list"
+    ));
+
     private static String cleanCandidateText(String raw) {
         if (raw == null) return "";
         String s = raw.trim();
-        String lower = s.toLowerCase();
-        if (lower.startsWith("resume: ")) s = s.substring(8).trim();
-        else if (lower.startsWith("resume ")) s = s.substring(7).trim();
-        else if (lower.startsWith("watch next: ")) s = s.substring(12).trim();
-        else if (lower.startsWith("watch next ")) s = s.substring(11).trim();
-        else if (lower.startsWith("continue watching: ")) s = s.substring(19).trim();
-        else if (lower.startsWith("continue watching ")) s = s.substring(18).trim();
-        else if (lower.startsWith("keep watching: ")) s = s.substring(15).trim();
-        else if (lower.startsWith("keep watching ")) s = s.substring(14).trim();
-        else if (lower.startsWith("play ")) s = s.substring(5).trim();
 
-        // Strip remaining time suffix if present
+        // 1. Strip trailing user interaction instructions
+        s = s.replaceAll("(?i)\\.?\\s*(Select to watch|Long press to|Press select|Press enter|Press OK|Click to).*$", "").trim();
+        s = s.replaceAll("(?i)\\.?\\s*Long Press to Remove.*$", "").trim();
+        s = s.replaceAll("(?i)\\.?\\s*Remove from Continue Watching.*$", "").trim();
+
+        // 2. Strip leading action verbs/prompts
+        s = s.replaceAll("^(?i)(resume:?\\s*|watch next:?\\s*|continue watching:?\\s*|keep watching:?\\s*|play\\s+|watch next episode,?\\s*)", "").trim();
+
+        // 3. Strip remaining time suffixes
         s = s.replaceAll("(?i)\\s*[\\u2022\\-]\\s*\\d+\\s*(min|minute|m|hr|hour)s?\\s*(left|remaining)?.*$", "").trim();
+
+        // 4. Strip trailing punctuation
+        s = s.replaceAll("[,;\\.]+$", "").trim();
         return s;
+    }
+
+    public static boolean isPlausibleTitleOnly(String title) {
+        if (title == null) return false;
+        String t = title.trim();
+        if (t.length() < 2 || t.length() > 60) return false;
+        String lower = t.toLowerCase();
+        if (ROW_HEADER_KEYWORDS.contains(lower)) return false;
+        for (String rh : ROW_HEADER_KEYWORDS) {
+            if (lower.equals(rh) || lower.startsWith(rh + ":") || lower.startsWith(rh + " -")) return false;
+        }
+        if (KNOWN_BADGES_AND_RATINGS.contains(lower) || lower.startsWith("rated ")) return false;
+        if (lower.contains("minute") || lower.contains("hour") || lower.contains("skip")
+                || lower.contains("loading") || lower.contains("terms") || lower.contains("privacy")
+                || lower.contains("sign in") || lower.contains("sign out") || lower.contains("remove from")
+                || lower.contains("press select") || lower.contains("audio description") || lower.contains("more info")) {
+            return false;
+        }
+        return true;
     }
 
     private boolean isPlausibleShowTitle(String text) {
         if (text == null) return false;
         String cleaned = cleanCandidateText(text);
-        if (cleaned.length() < 2 || cleaned.length() > 90) return false;
+        if (cleaned.length() < 2 || cleaned.length() > 120) return false;
         String lower = cleaned.toLowerCase().trim();
         if (IGNORED_TITLES.contains(lower)) return false;
         for (String kw : WATCHLIST_KEYWORDS) {
             if (lower.equals(kw)) return false;
         }
-        if (lower.contains("loading") || lower.contains("press select") || lower.contains("press enter")
-                || lower.contains("terms") || lower.contains("privacy policy") || lower.contains("sign in") || lower.contains("sign out")
-                || lower.contains("remove from") || lower.contains("add to")
-                || lower.contains("manage watchlist") || lower.contains("audio description")
-                || lower.contains("action/adventure")) {
-            return false;
-        }
+        if (ROW_HEADER_KEYWORDS.contains(lower)) return false;
         return true;
     }
 
@@ -1936,10 +1965,39 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
         String cleaned = cleanCandidateText(raw);
         if (cleaned.isEmpty()) return;
 
-        String title = cleaned;
+        String title = "";
         String ep = "Continue Watching";
 
-        if (cleaned.contains(" - ")) {
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile(
+                "(?i)\\b(?:Season|S)\\s*(\\d+)[\\s,:]*(?:Episode|E)\\s*(\\d+)(?:[\\s\\-\\u2022:]+(.*))?");
+        java.util.regex.Matcher m = p.matcher(cleaned);
+
+        if (m.find()) {
+            String sNum = m.group(1);
+            String eNum = m.group(2);
+            String epTitle = m.group(3);
+            if (epTitle != null && !epTitle.trim().isEmpty()) {
+                ep = "S" + sNum + ":E" + eNum + " \u2022 " + epTitle.trim();
+            } else {
+                ep = "S" + sNum + ":E" + eNum;
+            }
+
+            String prefix = cleaned.substring(0, m.start()).trim();
+            String[] tokens = prefix.split(",");
+            for (String tok : tokens) {
+                String candidate = tok.trim();
+                String cLower = candidate.toLowerCase();
+                if (KNOWN_BADGES_AND_RATINGS.contains(cLower) || cLower.startsWith("rated ")
+                        || cLower.equals("watch next episode") || cLower.isEmpty()) {
+                    continue;
+                }
+                title = candidate;
+                break;
+            }
+            if (title.isEmpty() && tokens.length > 0) {
+                title = tokens[0].trim();
+            }
+        } else if (cleaned.contains(" - ")) {
             String[] parts = cleaned.split(" - ", 2);
             title = parts[0].trim();
             ep = parts[1].trim();
@@ -1951,16 +2009,17 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
             String[] parts = cleaned.split(": (?=S)", 2);
             title = parts[0].trim();
             ep = parts[1].trim();
+        } else if (cleaned.contains(",")) {
+            String[] parts = cleaned.split(",", 2);
+            title = parts[0].trim();
+            ep = parts[1].trim();
+        } else {
+            title = cleaned;
         }
 
-
-
-        if (title.isEmpty()) return;
-
-
+        if (title.isEmpty() || !isPlausibleTitleOnly(title)) return;
 
         WatchNextManager.saveDynamicWatchlistShow(this, pkg, title, ep);
-
     }
 
 

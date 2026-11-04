@@ -1057,7 +1057,13 @@ public class WatchNextManager {
         if (t.length() < 2 || t.length() > 65)
             return false;
         String lower = t.toLowerCase();
-        if (lower.contains("remove from") || lower.contains("add to") || lower.contains("continue watching")
+        if (lower.equals("recommended for you") || lower.equals("anime") || lower.equals("movies")
+                || lower.equals("shows") || lower.equals("top 10") || lower.equals("featured")
+                || lower.equals("trending") || lower.equals("new releases") || lower.equals("just added")
+                || lower.equals("action") || lower.equals("comedy") || lower.equals("drama")
+                || lower.equals("animation") || lower.equals("kids") || lower.equals("family")
+                || lower.equals("because you watched") || lower.equals("more like this")
+                || lower.contains("remove from") || lower.contains("add to") || lower.contains("continue watching")
                 || lower.contains("watch next") || lower.contains("resume") || lower.contains("dismiss")
                 || lower.contains("option") || lower.contains("manage") || lower.contains("clear")
                 || lower.contains("delete") || lower.contains("details") || lower.contains("episodes")
@@ -1270,40 +1276,12 @@ public class WatchNextManager {
             String storageKey = getProfileStorageKey(context);
             String raw = sp.getString(storageKey, null);
 
-            // If active profile has no saved data yet, initialize with authentic shows for Ben
             if (raw == null) {
-                String profile = getCurrentProfile(context);
-                if ("Ben".equalsIgnoreCase(profile) || "Benjamin".equalsIgnoreCase(profile)) {
-                    JSONArray seed = buildBenAuthenticShowsSeed(appMap);
-                    raw = seed.toString();
-                    sp.edit().putString(storageKey, raw).apply();
-                } else {
-                    raw = "[]";
-                    sp.edit().putString(storageKey, raw).apply();
-                }
+                raw = "[]";
+                sp.edit().putString(storageKey, raw).apply();
             }
 
             JSONArray arr = new JSONArray(raw);
-            if (appMap != null) {
-                java.util.Set<String> existingPkgs = new java.util.HashSet<>();
-                for (int i = 0; i < arr.length(); i++) {
-                    existingPkgs.add(getAppKey(arr.getJSONObject(i).optString("packageName")));
-                }
-                boolean addedMissing = false;
-                JSONArray supplemental = buildBenAuthenticShowsSeed(appMap);
-                for (int i = 0; i < supplemental.length(); i++) {
-                    JSONObject seedObj = supplemental.getJSONObject(i);
-                    String sPkg = seedObj.optString("packageName");
-                    if (sPkg != null && !sPkg.isEmpty() && !existingPkgs.contains(getAppKey(sPkg))) {
-                        arr.put(seedObj);
-                        existingPkgs.add(getAppKey(sPkg));
-                        addedMissing = true;
-                    }
-                }
-                if (addedMissing) {
-                    sp.edit().putString(storageKey, arr.toString()).apply();
-                }
-            }
             JSONArray cleanedArr = new JSONArray();
             boolean hadCorrupted = false;
             for (int i = 0; i < arr.length(); i++) {
@@ -1312,6 +1290,15 @@ public class WatchNextManager {
                 String pkg = obj.optString("packageName");
                 String badge = obj.optString("appBadge");
                 String title = obj.optString("showTitle");
+
+                // Purge legacy hardcoded placeholder seeds
+                if (id != null && (id.startsWith("disney_ben_") || id.startsWith("max_ben_")
+                        || id.startsWith("netflix_ben_") || id.startsWith("peacock_ben_")
+                        || id.startsWith("apple_ben_") || id.startsWith("paramount_ben_")
+                        || id.startsWith("hulu_ben_") || id.startsWith("custom_ben_"))) {
+                    hadCorrupted = true;
+                    continue;
+                }
 
                 if (!isPlausibleShowTitle(title) || (id != null && id.contains("RFCW")) || (title != null && title.toLowerCase().contains("remove from"))) {
                     hadCorrupted = true;
@@ -1366,223 +1353,7 @@ public class WatchNextManager {
     }
 
     private static JSONArray buildBenAuthenticShowsSeed(Map<String, AppItem> appMap) {
-        JSONArray arr = new JSONArray();
-        try {
-            String disneyPkg = findInstalled(appMap, "com.disney.disneyplus");
-            if (disneyPkg == null)
-                disneyPkg = "com.disney.disneyplus";
-
-            // 1. VisionQuest (Disney+ Ben Profile)
-            JSONObject s1 = new JSONObject();
-            s1.put("id", "disney_ben_visionquest");
-            s1.put("packageName", disneyPkg);
-            s1.put("appBadge", "DISNEY+");
-            s1.put("showTitle", "VisionQuest");
-            s1.put("episodeInfo", "S1:E4 Malware");
-            s1.put("progressPercent", 45);
-            s1.put("brandColor", Color.parseColor("#1B45F5"));
-            s1.put("intentUri", "https://www.disneyplus.com/browse/entity-8744ec55-8d14-4631-99b4-c889a2d6013f");
-            arr.put(s1);
-
-            // 2. Bleach: Thousand-Year Blood War (Disney+ Ben Profile)
-            JSONObject s2 = new JSONObject();
-            s2.put("id", "disney_ben_bleach");
-            s2.put("packageName", disneyPkg);
-            s2.put("appBadge", "DISNEY+");
-            s2.put("showTitle", "Bleach: Thousand-Year Blood War");
-            s2.put("episodeInfo", "S4:E9 (Sub) THE BLADE");
-            s2.put("progressPercent", 80);
-            s2.put("brandColor", Color.parseColor("#1B45F5"));
-            s2.put("intentUri", "https://www.disneyplus.com/browse/entity-02a3c8c0-4f1d-4610-bbb4-5b8e9468d7b1");
-            arr.put(s2);
-
-            // 3. Rick and Morty (Disney+ Ben Profile)
-            JSONObject s3 = new JSONObject();
-            s3.put("id", "disney_ben_rickmorty");
-            s3.put("packageName", disneyPkg);
-            s3.put("appBadge", "DISNEY+");
-            s3.put("showTitle", "Rick and Morty");
-            s3.put("episodeInfo", "S7:E3 Air Force Wong");
-            s3.put("progressPercent", 60);
-            s3.put("brandColor", Color.parseColor("#1B45F5"));
-            s3.put("intentUri", "https://www.disneyplus.com/browse/entity-4e0f6374-fc81-4da2-b7a9-f7f8c29e7acc");
-            arr.put(s3);
-
-            // 4. Abbott Elementary (Disney+ Ben Profile)
-            JSONObject s4 = new JSONObject();
-            s4.put("id", "disney_ben_abbott");
-            s4.put("packageName", disneyPkg);
-            s4.put("appBadge", "DISNEY+");
-            s4.put("showTitle", "Abbott Elementary");
-            s4.put("episodeInfo", "S5:E1 Team Building");
-            s4.put("progressPercent", 30);
-            s4.put("brandColor", Color.parseColor("#1B45F5"));
-            s4.put("intentUri", "https://www.disneyplus.com/browse/entity-7c33eeb2-5d16-4a10-ad9e-ee31f9fff15c");
-            arr.put(s4);
-
-            String maxPkg = findInstalled(appMap, "com.hbo.hbonow", "com.wbd.stream");
-            if (maxPkg == null)
-                maxPkg = "com.hbo.hbonow";
-
-            // 5. Georgie & Mandy's First Marriage (Max Benjamin Profile)
-            JSONObject s5 = new JSONObject();
-            s5.put("id", "max_ben_georgie");
-            s5.put("packageName", maxPkg);
-            s5.put("appBadge", "MAX");
-            s5.put("showTitle", "Georgie & Mandy's First Marriage");
-            s5.put("episodeInfo", "S1 E13 McAllister Auto Loves the Ladies");
-            s5.put("progressPercent", 90);
-            s5.put("brandColor", Color.parseColor("#8028F5"));
-            s5.put("intentUri", "https://play.max.com/show/2c59e4b1-b024-4725-bf07-398f6225b653");
-            arr.put(s5);
-
-            // 6. Peacemaker (Max Benjamin Profile)
-            JSONObject s6 = new JSONObject();
-            s6.put("id", "max_ben_peacemaker");
-            s6.put("packageName", maxPkg);
-            s6.put("appBadge", "MAX");
-            s6.put("showTitle", "Peacemaker");
-            s6.put("episodeInfo", "S2 E8 Full Nelson");
-            s6.put("progressPercent", 10);
-            s6.put("brandColor", Color.parseColor("#8028F5"));
-            s6.put("intentUri", "https://play.max.com/show/a939d96b-7ffb-4481-96f6-472838d104ca");
-            arr.put(s6);
-
-            // 7. Stuart Fails to Save the Universe (Max Benjamin Profile)
-            JSONObject s7 = new JSONObject();
-            s7.put("id", "max_ben_stuart");
-            s7.put("packageName", maxPkg);
-            s7.put("appBadge", "MAX");
-            s7.put("showTitle", "Stuart Fails to Save the Universe");
-            s7.put("episodeInfo", "S1 E10 Spoiler: Filmed Before a Live Studio Audience");
-            s7.put("progressPercent", 35);
-            s7.put("brandColor", Color.parseColor("#8028F5"));
-            s7.put("intentUri", "https://play.max.com/show/1130c5ba-e71f-43e0-8de3-487dfdb49c11");
-            arr.put(s7);
-
-            // 8. Netflix shows (if installed)
-            String netflixPkg = findInstalled(appMap, "com.netflix.ninja");
-            if (netflixPkg != null) {
-                JSONObject sn1 = new JSONObject();
-                sn1.put("id", "netflix_ben_strangerthings");
-                sn1.put("packageName", netflixPkg);
-                sn1.put("appBadge", "NETFLIX");
-                sn1.put("showTitle", "Stranger Things");
-                sn1.put("episodeInfo", "S4:E7 Chapter Seven: The Massacre at Hawkins Lab");
-                sn1.put("progressPercent", 75);
-                sn1.put("brandColor", Color.parseColor("#E50914"));
-                sn1.put("intentUri", "https://www.netflix.com/title/80057281");
-                arr.put(sn1);
-
-                JSONObject sn2 = new JSONObject();
-                sn2.put("id", "netflix_ben_squidgame");
-                sn2.put("packageName", netflixPkg);
-                sn2.put("appBadge", "NETFLIX");
-                sn2.put("showTitle", "Squid Game");
-                sn2.put("episodeInfo", "S1:E6 Gganbu");
-                sn2.put("progressPercent", 50);
-                sn2.put("brandColor", Color.parseColor("#E50914"));
-                sn2.put("intentUri", "https://www.netflix.com/title/81040344");
-                arr.put(sn2);
-
-                JSONObject sn3 = new JSONObject();
-                sn3.put("id", "netflix_ben_witcher");
-                sn3.put("packageName", netflixPkg);
-                sn3.put("appBadge", "NETFLIX");
-                sn3.put("showTitle", "The Witcher");
-                sn3.put("episodeInfo", "S3:E4 The Invitation");
-                sn3.put("progressPercent", 65);
-                sn3.put("brandColor", Color.parseColor("#E50914"));
-                sn3.put("intentUri", "https://www.netflix.com/title/80189685");
-                arr.put(sn3);
-            }
-
-            // 9. Peacock shows (if installed)
-            String peacockPkg = findInstalled(appMap, "com.peacock.peacockfiretv", "com.peacocktv.peacockandroid");
-            if (peacockPkg != null) {
-                JSONObject sp1 = new JSONObject();
-                sp1.put("id", "peacock_ben_office");
-                sp1.put("packageName", peacockPkg);
-                sp1.put("appBadge", "PEACOCK");
-                sp1.put("showTitle", "The Office");
-                sp1.put("episodeInfo", "S5:E14 Stress Relief");
-                sp1.put("progressPercent", 85);
-                sp1.put("brandColor", Color.parseColor("#0081C8"));
-                sp1.put("intentUri", "https://www.peacocktv.com/watch/asset/tv/the-office/6900795451676644112");
-                arr.put(sp1);
-
-                JSONObject sp2 = new JSONObject();
-                sp2.put("id", "peacock_ben_pokerface");
-                sp2.put("packageName", peacockPkg);
-                sp2.put("appBadge", "PEACOCK");
-                sp2.put("showTitle", "Poker Face");
-                sp2.put("episodeInfo", "S1:E8 The Orpheus Syndrome");
-                sp2.put("progressPercent", 40);
-                sp2.put("brandColor", Color.parseColor("#0081C8"));
-                sp2.put("intentUri", "https://www.peacocktv.com/watch/asset/tv/poker-face/8729352934812391112");
-                arr.put(sp2);
-            }
-
-            // 10. Apple TV+ shows (if installed)
-            String applePkg = findInstalled(appMap, "com.apple.atve.amazon.appletv", "com.apple.atve.androidtv.appletv");
-            if (applePkg != null) {
-                JSONObject sa1 = new JSONObject();
-                sa1.put("id", "apple_ben_severance");
-                sa1.put("packageName", applePkg);
-                sa1.put("appBadge", "APPLE TV+");
-                sa1.put("showTitle", "Severance");
-                sa1.put("episodeInfo", "S1:E9 The We We Are");
-                sa1.put("progressPercent", 90);
-                sa1.put("brandColor", Color.parseColor("#000000"));
-                sa1.put("intentUri", "https://tv.apple.com/show/severance/umc.cmc.1srk2goyh2q2zdxcx60pfwrcq");
-                arr.put(sa1);
-
-                JSONObject sa2 = new JSONObject();
-                sa2.put("id", "apple_ben_tedlasso");
-                sa2.put("packageName", applePkg);
-                sa2.put("appBadge", "APPLE TV+");
-                sa2.put("showTitle", "Ted Lasso");
-                sa2.put("episodeInfo", "S3:E11 Mom City");
-                sa2.put("progressPercent", 55);
-                sa2.put("brandColor", Color.parseColor("#000000"));
-                sa2.put("intentUri", "https://tv.apple.com/show/ted-lasso/umc.cmc.vtoh0q0xraylo2ae0i4bwvd8");
-                arr.put(sa2);
-            }
-
-            // 11. Paramount+ shows (if installed)
-            String paramountPkg = findInstalled(appMap, "com.cbs.ott");
-            if (paramountPkg != null) {
-                JSONObject spar1 = new JSONObject();
-                spar1.put("id", "paramount_ben_yellowstone");
-                spar1.put("packageName", paramountPkg);
-                spar1.put("appBadge", "PARAMOUNT+");
-                spar1.put("showTitle", "Yellowstone");
-                spar1.put("episodeInfo", "S5:E8 A Knife and No Coin");
-                spar1.put("progressPercent", 70);
-                spar1.put("brandColor", Color.parseColor("#0064FF"));
-                spar1.put("intentUri", "https://www.paramountplus.com/shows/yellowstone/");
-                arr.put(spar1);
-            }
-
-            // 12. Hulu shows (if installed)
-            String huluPkg = findInstalled(appMap, "com.hulu.plus", "com.hulu.livingroomplus");
-            if (huluPkg != null) {
-                JSONObject sh1 = new JSONObject();
-                sh1.put("id", "hulu_ben_thebear");
-                sh1.put("packageName", huluPkg);
-                sh1.put("appBadge", "HULU");
-                sh1.put("showTitle", "The Bear");
-                sh1.put("episodeInfo", "S2:E6 Fishes");
-                sh1.put("progressPercent", 80);
-                sh1.put("brandColor", Color.parseColor("#1CE783"));
-                sh1.put("intentUri", "https://www.hulu.com/series/the-bear");
-                arr.put(sh1);
-            }
-
-        } catch (Throwable t) {
-            Log.e(TAG, "buildBenAuthenticShowsSeed error", t);
-        }
-        return arr;
+        return new JSONArray();
     }
 
     public static String toShowSlug(String title) {

@@ -66,11 +66,27 @@ public class WatchNextNotificationListener extends NotificationListenerService {
             String ep = textSeq != null ? textSeq.toString().trim() : "Resume";
 
             String imageFile = null;
+            Bitmap notifBmp = null;
             if (extras.containsKey(Notification.EXTRA_PICTURE)) {
                 Object picObj = extras.get(Notification.EXTRA_PICTURE);
                 if (picObj instanceof Bitmap) {
-                    imageFile = saveThumbnailLocally(this, "notif_" + sbn.getId(), (Bitmap) picObj);
+                    notifBmp = (Bitmap) picObj;
                 }
+            } else if (extras.containsKey(Notification.EXTRA_LARGE_ICON)) {
+                Object iconObj = extras.get(Notification.EXTRA_LARGE_ICON);
+                if (iconObj instanceof Bitmap) {
+                    notifBmp = (Bitmap) iconObj;
+                } else if (android.os.Build.VERSION.SDK_INT >= 23 && iconObj instanceof android.graphics.drawable.Icon) {
+                    try {
+                        android.graphics.drawable.Drawable d = ((android.graphics.drawable.Icon) iconObj).loadDrawable(this);
+                        if (d instanceof android.graphics.drawable.BitmapDrawable) {
+                            notifBmp = ((android.graphics.drawable.BitmapDrawable) d).getBitmap();
+                        }
+                    } catch (Throwable ignored) {}
+                }
+            }
+            if (notifBmp != null) {
+                imageFile = saveThumbnailLocally(this, "notif_" + sbn.getId(), notifBmp);
             }
 
             saveRecommendationItem(this, sbn.getKey(), pkg, title, ep, imageFile);
@@ -120,6 +136,7 @@ public class WatchNextNotificationListener extends NotificationListenerService {
             }
 
             sp.edit().putString(KEY_NOTIF_ITEMS, newArr.toString()).apply();
+            MainActivity.requestRefreshContinueWatching();
         } catch (Throwable t) {
             Log.e(TAG, "Error saving recommendation item", t);
         }

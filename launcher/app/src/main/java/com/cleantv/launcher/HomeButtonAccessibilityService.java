@@ -1842,18 +1842,11 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
                     try {
                         AccessibilityNodeInfo parent = node.getParent();
                         if (parent != null) {
-                            int siblingCount = parent.getChildCount();
-                            for (int s = 0; s < siblingCount; s++) {
-                                AccessibilityNodeInfo sibling = parent.getChild(s);
-                                if (sibling != null) {
-                                    try {
-                                        if (!sibling.equals(node)) {
-                                            harvestNodesRecursive(sibling, pkg, true, depth + 1);
-                                        }
-                                    } finally {
-                                        sibling.recycle();
-                                    }
-                                }
+                            harvestSiblings(parent, node, pkg, depth);
+                            AccessibilityNodeInfo grandParent = parent.getParent();
+                            if (grandParent != null) {
+                                harvestSiblings(grandParent, parent, pkg, depth);
+                                grandParent.recycle();
                             }
                             parent.recycle();
                         }
@@ -1864,124 +1857,100 @@ public class HomeButtonAccessibilityService extends AccessibilityService {
             }
         }
 
-
-
         if (sectionDetected) {
-
             String candidate = !desc.isEmpty() ? desc : text;
-
             if (isPlausibleShowTitle(candidate)) {
-
                 parseAndSaveShow(pkg, candidate);
-
             }
-
         }
-
-
 
         int childCount = node.getChildCount();
-
         for (int i = 0; i < childCount; i++) {
-
             AccessibilityNodeInfo child = node.getChild(i);
-
             if (child != null) {
-
                 try {
-
                     harvestNodesRecursive(child, pkg, sectionDetected, depth + 1);
-
                 } finally {
-
                     child.recycle();
-
                 }
-
             }
-
         }
-
     }
 
+    private void harvestSiblings(AccessibilityNodeInfo container, AccessibilityNodeInfo excludeChild, String pkg, int depth) {
+        if (container == null) return;
+        int count = container.getChildCount();
+        for (int i = 0; i < count; i++) {
+            AccessibilityNodeInfo child = container.getChild(i);
+            if (child != null) {
+                try {
+                    if (excludeChild == null || !child.equals(excludeChild)) {
+                        harvestNodesRecursive(child, pkg, true, depth + 1);
+                    }
+                } finally {
+                    child.recycle();
+                }
+            }
+        }
+    }
 
+    private static String cleanCandidateText(String raw) {
+        if (raw == null) return "";
+        String s = raw.trim();
+        String lower = s.toLowerCase();
+        if (lower.startsWith("resume: ")) s = s.substring(8).trim();
+        else if (lower.startsWith("resume ")) s = s.substring(7).trim();
+        else if (lower.startsWith("watch next: ")) s = s.substring(12).trim();
+        else if (lower.startsWith("watch next ")) s = s.substring(11).trim();
+        else if (lower.startsWith("continue watching: ")) s = s.substring(19).trim();
+        else if (lower.startsWith("continue watching ")) s = s.substring(18).trim();
+        else if (lower.startsWith("keep watching: ")) s = s.substring(15).trim();
+        else if (lower.startsWith("keep watching ")) s = s.substring(14).trim();
+        else if (lower.startsWith("play ")) s = s.substring(5).trim();
+
+        // Strip remaining time suffix if present
+        s = s.replaceAll("(?i)\\s*[\\u2022\\-]\\s*\\d+\\s*(min|minute|m|hr|hour)s?\\s*(left|remaining)?.*$", "").trim();
+        return s;
+    }
 
     private boolean isPlausibleShowTitle(String text) {
-
-        if (text == null || text.length() < 2 || text.length() > 65) return false;
-
-        String lower = text.toLowerCase().trim();
-
+        if (text == null) return false;
+        String cleaned = cleanCandidateText(text);
+        if (cleaned.length() < 2 || cleaned.length() > 90) return false;
+        String lower = cleaned.toLowerCase().trim();
         if (IGNORED_TITLES.contains(lower)) return false;
-
         for (String kw : WATCHLIST_KEYWORDS) {
-
-            if (lower.equals(kw) || lower.contains(kw)) return false;
-
+            if (lower.equals(kw)) return false;
         }
-
-        if (lower.contains("minute") || lower.contains("hour") || lower.contains("skip")
-
-                || lower.contains("loading") || lower.contains("press select") || lower.contains("press enter")
-
-                || lower.contains("terms") || lower.contains("privacy") || lower.contains("sign in") || lower.contains("sign out")
-
-                || lower.contains("remove from") || lower.contains("add to") || lower.contains("watch next")
-
-                || lower.contains("resume") || lower.contains("dismiss") || lower.contains("option")
-
-                || lower.contains("manage") || lower.contains("clear") || lower.contains("delete")
-
-                || lower.contains("details") || lower.contains("episodes") || lower.contains("more info")
-
-                || lower.contains("see all") || lower.contains("switch") || lower.contains("restart")
-
-                || lower.contains("suggested") || lower.contains("extras") || lower.contains("audio description")
-
-                || lower.contains("trailer") || lower.contains("search by") || lower.contains("action/adventure")) {
-
+        if (lower.contains("loading") || lower.contains("press select") || lower.contains("press enter")
+                || lower.contains("terms") || lower.contains("privacy policy") || lower.contains("sign in") || lower.contains("sign out")
+                || lower.contains("remove from") || lower.contains("add to")
+                || lower.contains("manage watchlist") || lower.contains("audio description")
+                || lower.contains("action/adventure")) {
             return false;
-
         }
-
         return true;
-
     }
 
-
-
     private void parseAndSaveShow(String pkg, String raw) {
+        String cleaned = cleanCandidateText(raw);
+        if (cleaned.isEmpty()) return;
 
-        String title = raw;
-
+        String title = cleaned;
         String ep = "Continue Watching";
 
-
-
-        if (raw.contains(" - ")) {
-
-            String[] parts = raw.split(" - ", 2);
-
+        if (cleaned.contains(" - ")) {
+            String[] parts = cleaned.split(" - ", 2);
             title = parts[0].trim();
-
             ep = parts[1].trim();
-
-        } else if (raw.contains(", Season") || raw.contains(", S")) {
-
-            String[] parts = raw.split(", (?=S)", 2);
-
+        } else if (cleaned.contains(", Season") || cleaned.contains(", S")) {
+            String[] parts = cleaned.split(", (?=S)", 2);
             title = parts[0].trim();
-
             ep = parts[1].trim();
-
-        } else if (raw.contains(": Season") || raw.contains(": S")) {
-
-            String[] parts = raw.split(": (?=S)", 2);
-
+        } else if (cleaned.contains(": Season") || cleaned.contains(": S")) {
+            String[] parts = cleaned.split(": (?=S)", 2);
             title = parts[0].trim();
-
             ep = parts[1].trim();
-
         }
 
 

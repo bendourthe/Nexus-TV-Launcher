@@ -358,3 +358,21 @@ esolveAppBanner() in MainActivity.java to supply dedicated 16:9 assets when pack
 - [x] Build and Live Deployment:
   - Rebuilt and signed release APK launcher/build/clean-launcher-release.apk (428 MB).
   - Deployed and verified on Hisense Google TV (10.0.0.96:5555).
+
+### Phase 28 - Continue Watching Shelf Retirement, Dock Banner Perfection, and Architectural Gaps Documentation
+
+- [x] Complete Removal of Continue Watching Shelf:
+  - Set `containerContinueWatching` visibility to `View.GONE` in `launcher/app/src/main/res/layout/activity_main.xml`.
+  - Cleared collections and added early return in `populateContinueWatchingShelf()` in `MainActivity.java`, eliminating background content provider observer load and periodic polling.
+  - Restored seamless, distraction-free vertical D-pad navigation directly between Dock and All Apps phone grid.
+- [x] Dock Channel Banner Perfection:
+  - Curated 16:9 high-resolution banner drawables `banner_peacock.png` and `banner_appletv.png` centered on deep `#101116` dark obsidian backgrounds.
+  - Implemented `resolveAppBanner()` with `ScaleType.CENTER_CROP` in `MainActivity.java` across both standard and Edit Dock modes.
+  - Eliminated letterboxing, unscaled 48dp phone icons, and missing banners across Fire TV and Android TV.
+- [x] Known Gaps Architectural Documentation:
+  - Authored comprehensive architectural evaluation at `docs/known-gaps.md` analyzing OS sandbox boundaries, Fire OS content provider absence, accessibility foreground limits, and streaming DRM constraints.
+- [x] Multi-Device Deployment and Visual Verification:
+  - Rebuilt release APK `launcher/build/clean-launcher-release.apk` (428 MB).
+  - Deployed to Amazon Fire TV (`10.0.0.169:5555`) and Hisense Google TV (`10.0.0.96:5555`).
+  - Captured live screenshot on Fire TV visually verifying pristine Home screen with all 6 channels rendered in uniform 16:9 format and zero Continue Watching shelf clutter.
+

@@ -2293,7 +2293,9 @@ public class MainActivity extends Activity {
 
                 tile.setScaleY(1.15f);
 
-                ivBanner.setImageDrawable(app.banner != null ? app.banner : app.icon);
+                Drawable mBanner = resolveAppBanner(pkg, app.banner);
+                ivBanner.setImageDrawable(mBanner != null ? mBanner : app.icon);
+                ivBanner.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
                 tvLabel.setText("MOVE");
 
@@ -2307,9 +2309,13 @@ public class MainActivity extends Activity {
 
             } else {
 
-                if (app.banner != null) {
+                Drawable banner = resolveAppBanner(pkg, app.banner);
 
-                    ivBanner.setImageDrawable(app.banner);
+                if (banner != null) {
+
+                    ivBanner.setImageDrawable(banner);
+
+                    ivBanner.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
                     tvLabel.setVisibility(View.GONE);
 
@@ -2827,9 +2833,16 @@ public class MainActivity extends Activity {
 
     private void populateContinueWatchingShelf() {
 
-        if (shelfWatchNext == null || containerContinueWatching == null) return;
-
-        shelfWatchNext.removeAllViews();
+        if (containerContinueWatching != null) {
+            containerContinueWatching.setVisibility(View.GONE);
+        }
+        if (shelfWatchNext != null) {
+            shelfWatchNext.removeAllViews();
+        }
+        if (filterPillContainer != null) {
+            filterPillContainer.removeAllViews();
+        }
+        if (true) return;
 
         // Ensure legacy synthetic mock shows from older versions are completely purged and seeded with canonical UUID deep links
 
